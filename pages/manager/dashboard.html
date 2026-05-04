@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý cửa hàng - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+    </style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="dashboard.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">Bảng điều hành quản lý</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu chính</div>
+            <a href="store/store-info.html" class="sidebar-link"><span>Quản lý thông tin cửa hàng</span></a>
+            <a href="category/category-list.html" class="sidebar-link"><span>Quản lý danh mục</span></a>
+            <a href="product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
+            <a href="promotion/promotion-list.html" class="sidebar-link"><span>Quản lý khuyến mãi</span></a>
+            <a href="report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Quản lý</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+            </div>
+            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Tổng quan vận hành</h1>
+                <p class="dashboard-header-copy">Theo dõi doanh thu, tồn kho, khuyến mãi và các nghiệp vụ quản lý cửa hàng.</p>
+            </div>
+            <div class="dashboard-header-actions">
+                <a href="product/product-list.html" class="btn-primary">Quản lý sản phẩm</a>
+                <a href="report/report.html" class="btn-secondary">Xem báo cáo</a>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">Xin chào, <b id="managerNameHeader">Quản lý</b></span>
+                    <div id="managerAvatar" class="dashboard-avatar">QL</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="metric-grid mb-8">
+                <div class="metric-card">
+                    <div class="metric-label">Doanh thu ghi nhận</div>
+                    <div id="metricRevenue" class="metric-value">0 đ</div>
+                    <div class="metric-footnote">Theo các đơn đang xử lý, đã xác nhận và hoàn tất.</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Sản phẩm đang quản lý</div>
+                    <div id="metricProducts" class="metric-value">0</div>
+                    <div class="metric-footnote">Bao gồm sản phẩm đang bán và cần bổ sung.</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Tồn kho sắp hết</div>
+                    <div id="metricLowStock" class="metric-value">0</div>
+                    <div class="metric-footnote">Sản phẩm có tồn kho từ 10 đơn vị trở xuống.</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Khuyến mãi đang chạy</div>
+                    <div id="metricPromotions" class="metric-value">0</div>
+                    <div class="metric-footnote">Mã giảm giá/campaign đang hoạt động.</div>
+                </div>
+            </div>
+
+            <section class="surface-card mb-8">
+                <div class="surface-card-header">
+                    <div>
+                        <div class="eyebrow">Nghiệp vụ quản lý</div>
+                        <h2 class="section-title">Các chức năng sau khi đăng nhập</h2>
+                    </div>
+                </div>
+                <div class="surface-card-body grid md:grid-cols-2 xl:grid-cols-5 gap-4">
+                    <a href="store/store-info.html" class="btn-secondary justify-start">Thông tin cửa hàng</a>
+                    <a href="category/category-list.html" class="btn-secondary justify-start">Danh mục</a>
+                    <a href="product/product-list.html" class="btn-secondary justify-start">Sản phẩm & biến thể</a>
+                    <a href="promotion/promotion-list.html" class="btn-secondary justify-start">Khuyến mãi</a>
+                    <a href="report/report.html" class="btn-secondary justify-start">Báo cáo thống kê</a>
+                </div>
+            </section>
+
+            <div class="grid xl:grid-cols-[1.1fr_0.9fr] gap-8">
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Cần xử lý</div>
+                            <h2 class="section-title">Việc ưu tiên hôm nay</h2>
+                        </div>
+                    </div>
+                    <div id="dashboardTasks" class="surface-card-body quick-list"></div>
+                </section>
+
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Đơn hàng</div>
+                            <h2 class="section-title">Tỉ lệ trạng thái đơn</h2>
+                        </div>
+                    </div>
+                    <div id="dashboardOrderRate" class="surface-card-body chart-stack"></div>
+                </section>
+            </div>
+
+            <div class="grid xl:grid-cols-3 gap-8 mt-8">
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Doanh thu</div>
+                            <h2 class="section-title">Theo danh mục</h2>
+                        </div>
+                    </div>
+                    <div id="dashboardCategoryChart" class="surface-card-body chart-stack"></div>
+                </section>
+
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Tồn kho</div>
+                            <h2 class="section-title">Sản phẩm sắp hết hàng</h2>
+                        </div>
+                    </div>
+                    <div id="dashboardInventoryChart" class="surface-card-body chart-stack"></div>
+                </section>
+
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Khách hàng</div>
+                            <h2 class="section-title">Mua sắm nhiều nhất</h2>
+                        </div>
+                    </div>
+                    <div id="dashboardTopCustomers" class="surface-card-body chart-stack"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="../../assets/js/main.js"></script>
+    <script src="../../assets/js/report.js"></script>
+    <script>
+        function logout() {
+            EleganceApp.logout('../auth/login.html');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['MANAGER'], '../auth/login.html');
+            if (!user) return;
+            EleganceApp.hydrateUser('managerNameHeader', 'managerAvatar', user.name);
+            document.getElementById('managerSidebarName').textContent = user.name;
+
+            const db = EleganceApp.getDb();
+            const summary = EleganceReports.getSummary();
+            const lowStock = db.products.filter((product) => product.stock <= 10);
+            const returnOrders = db.orders.filter((order) => order.status === 'return_requested');
+            const activePromotions = db.promotions.filter((promotion) => promotion.status === 'active');
+
+            document.getElementById('metricRevenue').textContent = EleganceApp.formatCurrency(summary.revenue);
+            document.getElementById('metricProducts').textContent = summary.totalProducts;
+            document.getElementById('metricLowStock').textContent = summary.lowStockProducts;
+            document.getElementById('metricPromotions').textContent = summary.activePromotions;
+
+            document.getElementById('dashboardTasks').innerHTML = [
+                `${lowStock.length} sản phẩm đang dưới mức tồn kho an toàn.`,
+                `${activePromotions.length} chương trình khuyến mãi đang chạy cần theo dõi.`,
+                `${returnOrders.length} yêu cầu đổi trả đang mở.`,
+                `${db.products.filter((product) => product.status === 'draft').length} sản phẩm đang ở trạng thái bản nháp/ẩn.`
+            ].map((line, index) => `
+                <div class="quick-list-item">
+                    <div>
+                        <div class="text-sm text-gray-400">Mục ${index + 1}</div>
+                        <div class="font-medium text-gray-900 mt-2">${line}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            EleganceReports.renderBarChart('dashboardCategoryChart', EleganceReports.getRevenueByCategory(), (value) => EleganceApp.formatCurrency(value));
+            EleganceReports.renderBarChart('dashboardInventoryChart', EleganceReports.getInventorySnapshot().slice(0, 6), (value) => `${value} tồn`);
+            EleganceReports.renderBarChart('dashboardTopCustomers', EleganceReports.getTopCustomers(), (value) => EleganceApp.formatCurrency(value));
+            EleganceReports.renderBarChart('dashboardOrderRate', EleganceReports.getOrderRate(), (value, row) => `${value}% (${row.count} đơn)`);
+        });
+    </script>
+</body>
+
+</html>

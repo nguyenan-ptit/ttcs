@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý giao diện - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <aside class="w-64 bg-[#1a1a1a] text-white flex flex-col h-full shadow-2xl">
+        <div class="h-20 flex items-center justify-center border-b border-gray-700">
+            <h1 class="text-xl font-bold tracking-widest text-[#a87b51]">ÉLÉGANCE ADMIN</h1>
+        </div>
+
+        <nav class="flex-grow py-6 px-4 space-y-2">
+            <a href="user-list.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý tài khoản</span>
+            </a>
+
+            <a href="customer-list.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý khách hàng</span>
+            </a>
+
+            <a href="manage-ui.html"
+                class="flex items-center gap-3 bg-[#a87b51] text-white px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý giao diện</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-700">
+            <button onclick="logout()"
+                class="flex items-center gap-3 text-gray-400 hover:text-red-400 w-full px-4 py-2 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                <span class="font-medium">Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="h-20 bg-white flex items-center justify-between px-8 shadow-sm z-10">
+            <h2 class="text-2xl font-semibold text-gray-800">Cấu hình giao diện Website</h2>
+            <div class="flex items-center gap-4">
+                <a href="../../index.html"
+                    class="text-sm font-semibold text-[#a87b51] hover:text-[#8b633f] transition">Mở trang chủ</a>
+                <span class="text-sm text-gray-500">Xin chào, <b id="adminNameDisplay"
+                        class="text-black">Admin</b></span>
+                <div class="w-10 h-10 bg-[#a87b51] rounded-full flex items-center justify-center text-white font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            <div id="uiNotice" class="hidden mb-6"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Banner Trang Chủ</h3>
+                    <form id="bannerForm">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">URL hình ảnh Banner</label>
+                            <input type="url" id="bannerUrl"
+                                class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
+                                required>
+                        </div>
+                        <div class="mb-6">
+                            <p class="block text-sm font-semibold mb-2 text-gray-700">Hình ảnh xem trước</p>
+                            <div class="w-full h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                <img id="bannerPreview" class="w-full h-full object-cover" alt="Preview Banner">
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="bg-[#1a1a1a] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#a87b51] transition w-full">
+                            Lưu Banner
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Thông báo Khuyến mãi (Top Bar)</h3>
+                    <form id="topBarForm">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">Nội dung thông báo</label>
+                            <input type="text" id="topBarText"
+                                class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
+                                required>
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">Trạng thái hiển thị</label>
+                            <select id="topBarStatus"
+                                class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]">
+                                <option value="active">Hiển thị</option>
+                                <option value="hidden">Ẩn</option>
+                            </select>
+                        </div>
+                        <button type="submit"
+                            class="bg-[#1a1a1a] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#a87b51] transition w-full">
+                            Lưu Thông báo
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+
+        </div>
+    </main>
+
+    <script src="../../assets/js/main.js"></script>
+    <script>
+        function logout() {
+            EleganceApp.logout('../auth/login.html');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['ADMIN'], '../auth/login.html');
+            if (!user) return;
+
+            if (user.name) {
+                document.getElementById('adminNameDisplay').innerText = user.name;
+            }
+
+            const uiConfig = EleganceApp.getDb().uiConfig;
+            document.getElementById('bannerUrl').value = uiConfig.bannerUrl;
+            document.getElementById('bannerPreview').src = uiConfig.bannerUrl;
+            document.getElementById('topBarText').value = uiConfig.topBarText;
+            document.getElementById('topBarStatus').value = uiConfig.topBarVisible ? 'active' : 'hidden';
+
+            document.getElementById('bannerUrl').addEventListener('input', function (event) {
+                document.getElementById('bannerPreview').src = event.target.value;
+            });
+
+            document.getElementById('bannerForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                EleganceApp.upsertUiConfig({
+                    bannerUrl: document.getElementById('bannerUrl').value.trim()
+                });
+                EleganceApp.renderNotice('uiNotice', 'Đã cập nhật Banner trang chủ thành công.', 'success');
+            });
+
+            document.getElementById('topBarForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                EleganceApp.upsertUiConfig({
+                    topBarText: document.getElementById('topBarText').value.trim(),
+                    topBarVisible: document.getElementById('topBarStatus').value === 'active'
+                });
+                EleganceApp.renderNotice('uiNotice', 'Đã cập nhật thông báo khuyến mãi thành công.', 'success');
+            });
+        });
+    </script>
+</body>
+
+</html>

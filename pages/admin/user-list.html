@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tài khoản - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <aside class="w-64 bg-[#1a1a1a] text-white flex flex-col h-full shadow-2xl">
+        <div class="h-20 flex items-center justify-center border-b border-gray-700">
+            <h1 class="text-xl font-bold tracking-widest text-[#a87b51]">ÉLÉGANCE ADMIN</h1>
+        </div>
+
+        <nav class="flex-grow py-6 px-4 space-y-2">
+            <a href="user-list.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý tài khoản</span>
+            </a>
+            <a href="customer-list.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý khách hàng</span>
+            </a>
+            <a href="manage-ui.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý giao diện</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-700">
+            <button onclick="logout()"
+                class="flex items-center gap-3 text-gray-400 hover:text-red-400 w-full px-4 py-2 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                <span class="font-medium">Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="h-20 bg-white flex items-center justify-between px-8 shadow-sm z-10">
+            <h2 class="text-2xl font-semibold text-gray-800">Tài khoản nhân viên</h2>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-500">Xin chào, <b id="adminNameDisplay"
+                        class="text-black">Admin</b></span>
+                <div class="w-10 h-10 bg-[#a87b51] rounded-full flex items-center justify-center text-white font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+
+            <div class="flex justify-between items-center mb-6">
+                <div class="relative w-72">
+                    <input type="text" id="searchInput" placeholder="Tìm theo username..."
+                        class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a87b51]">
+                    <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+
+                <a href="add-user.html"
+                    class="bg-[#1a1a1a] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[#a87b51] transition flex items-center gap-2 shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Thêm tài khoản
+                </a>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                            <th class="px-6 py-4 font-medium">ID</th>
+                            <th class="px-6 py-4 font-medium">Username</th>
+                            <th class="px-6 py-4 font-medium">Họ & Tên</th>
+                            <th class="px-6 py-4 font-medium">Vai trò (Role)</th>
+                            <th class="px-6 py-4 font-medium">Trạng thái</th>
+                            <th class="px-6 py-4 font-medium text-right">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody" class="divide-y divide-gray-100">
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Mock data tương ứng với DB của bạn
+        let mockUsers = [
+            { id: 1, username: 'admin_thanh', fullName: 'Nguyễn Duy Thành', role: 'ADMIN', status: 'Active' },
+            { id: 2, username: 'manager_lan', fullName: 'Lê Thị Lan', role: 'MANAGER', status: 'Active' },
+            { id: 3, username: 'sale_tuan', fullName: 'Trần Anh Tuấn', role: 'SALE', status: 'Active' },
+            { id: 4, username: 'kho_hieu', fullName: 'Phạm Minh Hiếu', role: 'WAREHOUSE', status: 'Locked' }
+        ];
+
+        // Format huy hiệu (badge) Role
+        function getRoleBadge(role) {
+            const styles = {
+                'ADMIN': 'bg-purple-100 text-purple-700',
+                'MANAGER': 'bg-blue-100 text-blue-700',
+                'SALE': 'bg-green-100 text-green-700',
+                'WAREHOUSE': 'bg-yellow-100 text-yellow-700'
+            };
+            return `<span class="px-3 py-1 rounded-full text-xs font-semibold ${styles[role] || 'bg-gray-100 text-gray-700'}">${role}</span>`;
+        }
+
+        // Render bảng
+        function renderTable(data) {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+
+            data.forEach((user, index) => {
+                const statusBadge = user.status === 'Active'
+                    ? `<span class="text-green-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-green-500"></div> Hoạt động</span>`
+                    : `<span class="text-red-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div> Đã khóa</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-gray-500">#${user.id}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-800">${user.username}</td>
+                        <td class="px-6 py-4 text-gray-600">${user.fullName}</td>
+                        <td class="px-6 py-4">${getRoleBadge(user.role)}</td>
+                        <td class="px-6 py-4 font-medium text-sm">${statusBadge}</td>
+                        <td class="px-6 py-4 text-right space-x-3 text-sm">
+                            <a href="edit-user.html?id=${user.id}" class="text-blue-500 hover:text-blue-700 font-medium">Sửa</a>
+                            <button onclick="confirmAction(${user.id}, '${user.status}')" class="text-red-500 hover:text-red-700 font-medium">
+                                ${user.status === 'Active' ? 'Khóa' : 'Mở khóa'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Xử lý nút Khóa/Mở Khóa
+        function confirmAction(id, currentStatus) {
+            const actionText = currentStatus === 'Active' ? 'khóa' : 'mở khóa';
+            if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này không?`)) {
+                // Logic mock: Đảo ngược trạng thái
+                const userIndex = mockUsers.findIndex(u => u.id === id);
+                mockUsers[userIndex].status = currentStatus === 'Active' ? 'Locked' : 'Active';
+                renderTable(mockUsers);
+            }
+        }
+
+        // Xử lý tìm kiếm
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const keyword = e.target.value.toLowerCase();
+            const filtered = mockUsers.filter(u => u.username.toLowerCase().includes(keyword));
+            renderTable(filtered);
+        });
+
+        // Xử lý đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '../auth/login.html';
+        }
+
+        // Khởi chạy khi load trang
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (currentUser && currentUser.name) {
+                document.getElementById('adminNameDisplay').innerText = currentUser.name;
+            }
+            renderTable(mockUsers);
+        });
+    </script>
+</body>
+
+</html>

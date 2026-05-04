@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặt Hàng Thành Công - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+    </style>
+</head>
+
+<body class="bg-[#fcfaf8] text-gray-800 min-h-screen flex flex-col">
+
+    <header class="container mx-auto px-6 py-6 flex items-center justify-center border-b border-gray-200 bg-[#fcfaf8]">
+        <a href="../../index.html"
+            class="text-3xl font-serif tracking-[0.2em] text-[#a87b51] hover:text-[#8b633f] transition">
+            ÉLÉGANCE
+        </a>
+    </header>
+
+    <main class="container mx-auto px-6 py-20 flex-grow flex items-center justify-center">
+        <div class="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 text-center max-w-lg w-full">
+
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+
+            <h1 class="text-3xl font-serif font-semibold mb-4 text-gray-900">Đặt hàng thành công!</h1>
+            <p class="text-gray-500 mb-6 leading-relaxed">
+                Cảm ơn bạn đã mua sắm tại Élégance. Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến bạn.
+            </p>
+
+            <div class="bg-[#fcfaf8] border border-gray-200 rounded-xl py-4 px-6 mb-8 inline-block">
+                <span class="text-sm text-gray-500 block mb-1">Mã đơn hàng của bạn:</span>
+                <span id="orderCodeDisplay" class="text-xl font-bold text-[#a87b51] tracking-widest">Đang tải...</span>
+            </div>
+
+            <p class="text-sm text-gray-400 mb-8">
+                Chúng tôi đã gửi thông tin chi tiết đơn hàng vào email của bạn.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="../../index.html"
+                    class="px-8 py-3 bg-[#1a1a1a] text-white rounded-xl font-semibold hover:bg-black transition w-full sm:w-auto">
+                    TIẾP TỤC MUA SẮM
+                </a>
+                <a id="viewOrderLink" href="orders.html"
+                    class="px-8 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition w-full sm:w-auto">
+                    XEM ĐƠN HÀNG
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 py-6 mt-auto">
+        <div class="container mx-auto px-6 text-center text-sm text-gray-500">
+            <p>© 2026 ÉLÉGANCE. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lấy mã đơn hàng từ localStorage (đã lưu ở bước Thanh toán)
+            const orderCode = localStorage.getItem('lastOrderCode');
+
+            if (orderCode) {
+                document.getElementById('orderCodeDisplay').innerText = orderCode;
+                document.getElementById('viewOrderLink').href = 'orders.html?id=' + encodeURIComponent(orderCode);
+            } else {
+                document.getElementById('orderCodeDisplay').innerText = 'ORD-UNKNOWN';
+            }
+        });
+    </script>
+</body>
+
+</html>

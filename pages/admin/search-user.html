@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cuu tai khoan - Elegance Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="user-list.html" class="dashboard-brand-mark">ELEGANCE</a>
+            <div class="dashboard-brand-subtitle">Admin workspace</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Quan tri</div>
+            <a href="user-list.html" class="sidebar-link">
+                <span>Quan ly tai khoan</span>
+            </a>
+            <a href="search-user.html" class="sidebar-link active">
+                <span>Tra cuu nhan vien</span>
+            </a>
+            <a href="customer-list.html" class="sidebar-link">
+                <span>Khach hang</span>
+            </a>
+            <a href="manage-ui.html" class="sidebar-link">
+                <span>Giao dien website</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase tracking-[0.18em] text-white/45">Dang dang nhap</div>
+                <div id="adminNameSidebar" class="mt-2 font-semibold">Admin</div>
+            </div>
+            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Dang xuat</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Tra cuu tai khoan</h1>
+                <p class="dashboard-header-copy">Tim nhanh nhan vien theo username, vai tro va trang thai hoat dong.</p>
+            </div>
+            <div class="dashboard-header-actions">
+                <a href="add-user.html" class="btn-primary">Them tai khoan</a>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">Xin chao, <b id="adminNameHeader">Admin</b></span>
+                    <div id="adminAvatar" class="dashboard-avatar">AD</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="metric-grid mb-8">
+                <div class="metric-card">
+                    <div class="metric-label">Tong nhan vien</div>
+                    <div id="userTotal" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Dang hoat dong</div>
+                    <div id="userActive" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Tai khoan khoa</div>
+                    <div id="userLocked" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Quan ly cap trung</div>
+                    <div id="userManagerCount" class="metric-value">0</div>
+                </div>
+            </div>
+
+            <section class="surface-card">
+                <div class="surface-card-body">
+                    <div class="toolbar">
+                        <div class="toolbar-group flex-1">
+                            <input id="searchKeyword" class="form-input max-w-md" type="text"
+                                placeholder="Tim theo username hoac ho ten">
+                            <select id="roleFilter" class="form-select max-w-[220px]">
+                                <option value="">Tat ca vai tro</option>
+                                <option value="ADMIN">Admin</option>
+                                <option value="MANAGER">Manager</option>
+                                <option value="SALE">Sale</option>
+                                <option value="WAREHOUSE">Warehouse</option>
+                            </select>
+                            <select id="statusFilter" class="form-select max-w-[220px]">
+                                <option value="">Tat ca trang thai</option>
+                                <option value="Active">Dang hoat dong</option>
+                                <option value="Locked">Da khoa</option>
+                            </select>
+                        </div>
+                        <div class="text-sm text-gray-500">Cap nhat theo du lieu mo phong hien co.</div>
+                    </div>
+
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Ho ten</th>
+                                    <th>Vai tro</th>
+                                    <th>Trang thai</th>
+                                    <th>Thong tin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="searchUserTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="../../assets/js/main.js"></script>
+    <script>
+        const staffUsers = [
+            { id: 1, username: 'admin_thanh', fullName: 'Nguyen Duy Thanh', role: 'ADMIN', status: 'Active', note: 'Quan tri he thong' },
+            { id: 2, username: 'manager_lan', fullName: 'Le Thi Lan', role: 'MANAGER', status: 'Active', note: 'Quan ly cua hang Cau Giay' },
+            { id: 3, username: 'sale_tuan', fullName: 'Tran Anh Tuan', role: 'SALE', status: 'Active', note: 'Cham soc khach hang online' },
+            { id: 4, username: 'sale_ngoc', fullName: 'Pham Thu Ngoc', role: 'SALE', status: 'Locked', note: 'Tam dung tai khoan' },
+            { id: 5, username: 'kho_hieu', fullName: 'Pham Minh Hieu', role: 'WAREHOUSE', status: 'Active', note: 'Van hanh nhap xuat kho' }
+        ];
+
+        function roleBadge(role) {
+            const map = {
+                ADMIN: 'badge-danger',
+                MANAGER: 'badge-gold',
+                SALE: 'badge-info',
+                WAREHOUSE: 'badge-warning'
+            };
+            return `<span class="badge ${map[role] || 'badge-dark'}">${role}</span>`;
+        }
+
+        function statusBadge(status) {
+            const meta = status === 'Active'
+                ? { label: 'Dang hoat dong', className: 'badge-success' }
+                : { label: 'Da khoa', className: 'badge-danger' };
+            return `<span class="badge ${meta.className}">${meta.label}</span>`;
+        }
+
+        function renderStats(data) {
+            document.getElementById('userTotal').textContent = data.length;
+            document.getElementById('userActive').textContent = data.filter((item) => item.status === 'Active').length;
+            document.getElementById('userLocked').textContent = data.filter((item) => item.status === 'Locked').length;
+            document.getElementById('userManagerCount').textContent = data.filter((item) => item.role === 'MANAGER').length;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('searchUserTable');
+            tbody.innerHTML = data.map((user) => `
+                <tr>
+                    <td>#${user.id}</td>
+                    <td class="font-semibold text-gray-900">${user.username}</td>
+                    <td>${user.fullName}</td>
+                    <td>${roleBadge(user.role)}</td>
+                    <td>${statusBadge(user.status)}</td>
+                    <td class="text-gray-500">${user.note}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" class="empty-state">Khong tim thay tai khoan phu hop.</td></tr>';
+        }
+
+        function applyFilters() {
+            const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
+            const role = document.getElementById('roleFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const filtered = staffUsers.filter((user) => {
+                const matchesKeyword = !keyword ||
+                    user.username.toLowerCase().includes(keyword) ||
+                    user.fullName.toLowerCase().includes(keyword);
+                const matchesRole = !role || user.role === role;
+                const matchesStatus = !status || user.status === status;
+                return matchesKeyword && matchesRole && matchesStatus;
+            });
+            renderStats(filtered);
+            renderTable(filtered);
+        }
+
+        function logout() {
+            EleganceApp.logout('../auth/login.html');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            EleganceApp.ensureRole(['ADMIN'], '../auth/login.html');
+            const user = EleganceApp.hydrateUser('adminNameHeader', 'adminAvatar', 'Admin');
+            document.getElementById('adminNameSidebar').textContent = user?.name || 'Admin';
+            ['searchKeyword', 'roleFilter', 'statusFilter'].forEach((id) => {
+                document.getElementById(id).addEventListener('input', applyFilters);
+                document.getElementById(id).addEventListener('change', applyFilters);
+            });
+            applyFilters();
+        });
+    </script>
+</body>
+
+</html>

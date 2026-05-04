@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm tài khoản - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <aside class="w-64 bg-[#1a1a1a] text-white flex flex-col h-full shadow-2xl">
+        <div class="h-20 flex items-center justify-center border-b border-gray-700">
+            <h1 class="text-xl font-bold tracking-widest text-[#a87b51]">ÉLÉGANCE ADMIN</h1>
+        </div>
+
+        <nav class="flex-grow py-6 px-4 space-y-2">
+            <a href="user-list.html"
+                class="flex items-center gap-3 bg-[#a87b51] text-white px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý tài khoản</span>
+            </a>
+            <a href="customer-list.html"
+               class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý khách hàng</span>
+            </a>
+            <a href="manage-ui.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý giao diện</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-700">
+            <button onclick="logout()"
+                class="flex items-center gap-3 text-gray-400 hover:text-red-400 w-full px-4 py-2 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                <span class="font-medium">Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="h-20 bg-white flex items-center justify-between px-8 shadow-sm z-10">
+            <div class="flex items-center gap-4">
+                <a href="user-list.html" class="text-gray-500 hover:text-[#a87b51] transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <h2 class="text-2xl font-semibold text-gray-800">Thêm tài khoản mới</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-500">Xin chào, <b id="adminNameDisplay"
+                        class="text-black">Admin</b></span>
+                <div class="w-10 h-10 bg-[#a87b51] rounded-full flex items-center justify-center text-white font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 flex justify-center">
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-2xl h-fit">
+                <form id="addUserForm" onsubmit="handleAddUser(event)">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">Tên đăng nhập (Username) <span
+                                    class="text-red-500">*</span></label>
+                            <input type="text" id="username"
+                                class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
+                                placeholder="VD: sale_ngoc" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">Mật khẩu <span
+                                    class="text-red-500">*</span></label>
+                            <input type="password" id="password"
+                                class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
+                                placeholder="Nhập mật khẩu" required minlength="6">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold mb-2 text-gray-700">Họ và tên <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" id="fullname"
+                            class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
+                            placeholder="Nhập họ và tên đầy đủ" required>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-sm font-semibold mb-2 text-gray-700">Phân quyền (Role) <span
+                                class="text-red-500">*</span></label>
+                        <select id="role"
+                            class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51] cursor-pointer"
+                            required>
+                            <option value="" disabled selected>-- Chọn quyền cho nhân viên --</option>
+                            <option value="MANAGER">Quản lý (Manager)</option>
+                            <option value="SALE">Nhân viên CSKH (Sale)</option>
+                            <option value="WAREHOUSE">Nhân viên Kho (Warehouse)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-2 italic">* Lưu ý: Không thể cấp quyền System Admin cho tài
+                            khoản mới từ giao diện này.</p>
+                    </div>
+
+                    <div class="flex justify-end gap-4 border-t pt-6">
+                        <a href="user-list.html"
+                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit"
+                            class="px-6 py-3 bg-[#1a1a1a] text-white rounded-lg font-medium hover:bg-[#a87b51] transition">
+                            Thêm tài khoản
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Set tên Admin hiển thị trên header
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (currentUser && currentUser.name) {
+                document.getElementById('adminNameDisplay').innerText = currentUser.name;
+            }
+        });
+
+        // Xử lý sự kiện Submit Form Thêm Tài Khoản
+        function handleAddUser(event) {
+            event.preventDefault(); // Ngăn chặn reload trang
+
+            const username = document.getElementById('username').value.trim();
+            const fullname = document.getElementById('fullname').value.trim();
+            const role = document.getElementById('role').value;
+
+            // Ở đây trong thực tế sẽ gọi API POST lên backend. 
+            // Hiện tại ta dùng alert để mock data.
+            alert(`Đã thêm thành công!\n\nTài khoản: ${username}\nHọ tên: ${fullname}\nQuyền: ${role}`);
+
+            // Chuyển hướng về lại trang danh sách tài khoản
+            window.location.href = 'user-list.html';
+        }
+
+        // Xử lý đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '../auth/login.html';
+        }
+    </script>
+</body>
+
+</html>

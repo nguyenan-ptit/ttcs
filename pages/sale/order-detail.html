@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết đơn hàng - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="order-list.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh b&#225;n h&#224;ng</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <a href="order-list.html" class="sidebar-link active"><span>Quản lý đơn hàng</span></a>
+            <a href="return.html" class="sidebar-link"><span>Xử lý đổi trả</span></a>
+            <a href="feedback.html" class="sidebar-link"><span>Phản hồi đánh giá</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</div>
+                <div id="saleUserName" class="mt-2 font-semibold">Nhân viên sale</div>
+            </div>
+            <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 id="orderDetailTitle" class="dashboard-header-title">Chi tiết đơn hàng</h1>
+                <p class="dashboard-header-copy">Kiểm tra thông tin khách, món hàng và tổng tiền trước khi xác nhận.</p>
+            </div>
+            <div class="dashboard-header-actions">
+                <a href="order-list.html" class="btn-secondary">Quay lại danh sách</a>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="saleHeaderName">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</b></span>
+                    <div id="saleAvatar" class="dashboard-avatar">S</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div id="orderNotice" class="hidden mb-6"></div>
+            <div class="grid xl:grid-cols-[1fr_0.85fr] gap-8">
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Món hàng</div>
+                            <h2 class="section-title">Sản phẩm trong đơn</h2>
+                        </div>
+                    </div>
+                    <div class="surface-card-body">
+                        <div class="data-table-wrap">
+                            <table class="data-table min-w-0">
+                                <thead>
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th>Màu / Size</th>
+                                        <th>SL</th>
+                                        <th>Đơn giá</th>
+                                        <th>Thành tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderItemsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="stack">
+                    <div class="surface-card">
+                        <div class="surface-card-body quick-list" id="orderMetaList"></div>
+                    </div>
+                    <div class="surface-card surface-card-muted">
+                        <div class="surface-card-body">
+                            <div class="eyebrow">Thao tác</div>
+                            <h2 class="section-title">Xử lý đơn</h2>
+                            <p id="orderNoteText" class="mt-4 text-sm text-gray-600 leading-relaxed">Không có ghi chú bổ sung.</p>
+                            <div id="orderActions" class="mt-6 flex flex-col sm:flex-row gap-3">
+                                <button id="confirmOrderButton" class="btn-primary flex-1" type="button">Xác nhận đơn</button>
+                                <button id="openCancelModalButton" class="btn-danger flex-1" type="button">Hủy đơn</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="cancelModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-lg p-6">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Hủy đơn hàng</h2>
+                    <p class="text-sm text-gray-500 mt-1">Chọn lý do hủy trước khi xác nhận.</p>
+                </div>
+                <button id="closeCancelModalButton" class="text-gray-400 hover:text-gray-700 text-2xl leading-none" type="button">&times;</button>
+            </div>
+            <div id="cancelModalNotice" class="hidden mb-4"></div>
+            <form id="cancelOrderForm" class="stack">
+                <div>
+                    <label class="form-label" for="cancelReason">Lý do hủy</label>
+                    <select id="cancelReason" class="form-select">
+                        <option value="">-- Chọn lý do hủy --</option>
+                        <option value="Hết hàng">Hết hàng</option>
+                        <option value="Khách yêu cầu hủy">Khách yêu cầu hủy</option>
+                        <option value="Không liên hệ được khách">Không liên hệ được khách</option>
+                        <option value="Thông tin giao hàng không hợp lệ">Thông tin giao hàng không hợp lệ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="cancelNote">Ghi chú thêm</label>
+                    <textarea id="cancelNote" class="form-textarea" placeholder="Nhập ghi chú nếu cần"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancelModalBackButton" class="btn-secondary" type="button">Đóng</button>
+                    <button class="btn-danger" type="submit">Xác nhận hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../assets/js/main.js"></script>
+    <script>
+        let currentOrderId = null;
+
+        function setModalVisible(visible) {
+            const modal = document.getElementById('cancelModal');
+            modal.classList.toggle('hidden', !visible);
+            modal.classList.toggle('flex', visible);
+        }
+
+        function renderOrder(order) {
+            const statusMeta = EleganceApp.orderStatusMeta(order.status);
+            document.getElementById('orderDetailTitle').textContent = order.id;
+            document.getElementById('orderItemsTable').innerHTML = order.items.map((item) => `
+                <tr>
+                    <td class="font-semibold text-gray-900">${item.name}</td>
+                    <td>${item.color} / ${item.size}</td>
+                    <td>${item.qty}</td>
+                    <td>${EleganceApp.formatCurrency(item.price)}</td>
+                    <td>${EleganceApp.formatCurrency(item.qty * item.price)}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('orderMetaList').innerHTML = `
+                <div class="quick-list-item"><span>Khách hàng</span><b>${order.customerName}</b></div>
+                <div class="quick-list-item"><span>Số điện thoại</span><b>${order.phone}</b></div>
+                <div class="quick-list-item"><span>Địa chỉ</span><b>${order.address}</b></div>
+                <div class="quick-list-item"><span>Ngày tạo</span><b>${EleganceApp.formatDate(order.date)}</b></div>
+                <div class="quick-list-item"><span>Kênh</span><b>${order.channel}</b></div>
+                <div class="quick-list-item"><span>Thanh toán</span><b>${order.payment}</b></div>
+                <div class="quick-list-item"><span>Trạng thái</span><span class="badge ${statusMeta.className}">${statusMeta.label}</span></div>
+                <div class="quick-list-item"><span>Tổng tiền</span><b>${EleganceApp.formatCurrency(EleganceApp.getOrderTotal(order))}</b></div>
+            `;
+
+            document.getElementById('orderNoteText').textContent = order.note || 'Không có ghi chú bổ sung.';
+            const canProcess = order.status === 'new';
+            document.getElementById('confirmOrderButton').disabled = !canProcess;
+            document.getElementById('openCancelModalButton').disabled = !canProcess;
+            document.getElementById('orderActions').classList.toggle('opacity-50', !canProcess);
+        }
+
+        function getCurrentOrder() {
+            return EleganceApp.getDb().orders.find((item) => item.id === currentOrderId);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['SALE'], '../auth/login.html');
+            if (!user) return;
+            document.getElementById('saleUserName').textContent = user.name;
+            EleganceApp.hydrateUser('saleHeaderName', 'saleAvatar', user.name);
+
+            currentOrderId = new URLSearchParams(window.location.search).get('id') || EleganceApp.getDb().orders[0]?.id;
+            const order = getCurrentOrder();
+            if (!order) {
+                EleganceApp.renderNotice('orderNotice', 'Không tìm thấy đơn hàng.', 'error');
+                return;
+            }
+            renderOrder(order);
+
+            document.getElementById('confirmOrderButton').addEventListener('click', () => {
+                EleganceApp.updateDb((db) => {
+                    const target = db.orders.find((item) => item.id === currentOrderId);
+                    if (target && target.status === 'new') {
+                        target.status = 'preparing';
+                        target.note = 'Nhân viên bán hàng đã xác nhận đơn.';
+                    }
+                });
+                EleganceApp.renderNotice('orderNotice', 'Đã xác nhận đơn. Trạng thái chuyển sang Đang chuẩn bị hàng.', 'success');
+                renderOrder(getCurrentOrder());
+            });
+
+            document.getElementById('openCancelModalButton').addEventListener('click', () => setModalVisible(true));
+            document.getElementById('closeCancelModalButton').addEventListener('click', () => setModalVisible(false));
+            document.getElementById('cancelModalBackButton').addEventListener('click', () => setModalVisible(false));
+
+            document.getElementById('cancelOrderForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+                const reason = document.getElementById('cancelReason').value;
+                const note = document.getElementById('cancelNote').value.trim();
+                if (!reason) {
+                    EleganceApp.renderNotice('cancelModalNotice', 'Vui lòng chọn lý do hủy đơn.', 'error');
+                    return;
+                }
+                EleganceApp.updateDb((db) => {
+                    const target = db.orders.find((item) => item.id === currentOrderId);
+                    if (target && target.status === 'new') {
+                        target.status = 'cancelled';
+                        target.cancelReason = reason;
+                        target.note = note ? `${reason}. ${note}` : reason;
+                    }
+                });
+                setModalVisible(false);
+                EleganceApp.renderNotice('orderNotice', 'Đã hủy đơn hàng.', 'success');
+                renderOrder(getCurrentOrder());
+            });
+        });
+    </script>
+</body>
+
+</html>

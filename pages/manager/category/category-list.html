@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý danh mục - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../assets/css/style.css">
+    <style>body { font-family: 'Montserrat', sans-serif; }</style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="../dashboard.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">Bảng điều hành quản lý</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu chính</div>
+            <a href="../store/store-info.html" class="sidebar-link"><span>Quản lý thông tin cửa hàng</span></a>
+            <a href="category-list.html" class="sidebar-link active"><span>Quản lý danh mục</span></a>
+            <a href="../product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
+            <a href="../promotion/promotion-list.html" class="sidebar-link"><span>Quản lý khuyến mãi</span></a>
+            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Quản lý</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+            </div>
+            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Quản lý danh mục</h1>
+                <p class="dashboard-header-copy">Thêm mới, sửa và xóa các danh mục sản phẩm.</p>
+            </div>
+            <button onclick="openCategoryForm()" class="btn-primary">Thêm danh mục</button>
+        </header>
+
+        <div class="dashboard-content">
+            <section class="surface-card">
+                <div class="surface-card-body">
+                    <div id="categoryNotice" class="hidden mb-5"></div>
+                    <div class="toolbar">
+                        <input id="categorySearch" class="form-input max-w-md" type="text" placeholder="Tìm theo tên danh mục">
+                    </div>
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã</th>
+                                    <th>Tên danh mục</th>
+                                    <th>Mô tả</th>
+                                    <th>Số sản phẩm</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="categoryModal" class="hidden fixed inset-0 z-50 bg-black/40 items-center justify-center p-6">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-xl">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 id="categoryModalTitle" class="text-xl font-semibold text-gray-900">Thêm danh mục</h2>
+            </div>
+            <form id="categoryForm" class="p-6 stack">
+                <input id="categoryId" type="hidden">
+                <div class="form-grid">
+                    <div>
+                        <label class="form-label" for="categoryName">Tên danh mục</label>
+                        <input class="form-input" id="categoryName" type="text" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="categoryStatus">Trạng thái</label>
+                        <select class="form-select" id="categoryStatus">
+                            <option value="active">Đang dùng</option>
+                            <option value="draft">Bản nháp</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label" for="categoryDescription">Mô tả</label>
+                    <textarea class="form-textarea" id="categoryDescription"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeCategoryForm()" class="btn-secondary">Hủy</button>
+                    <button type="submit" class="btn-primary">Lưu danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../../assets/js/main.js"></script>
+    <script>
+        let categoryKeyword = '';
+
+        function getCategoryMeta(status) {
+            return status === 'active'
+                ? { label: 'Đang dùng', className: 'badge-success' }
+                : { label: 'Bản nháp', className: 'badge-dark' };
+        }
+
+        function renderCategoryTable() {
+            const db = EleganceApp.getDb();
+            const keyword = EleganceApp.normalizeText(categoryKeyword);
+            const rows = db.categories.filter((category) => !keyword || EleganceApp.normalizeText(category.name).includes(keyword));
+
+            document.getElementById('categoryTable').innerHTML = rows.map((category) => {
+                const count = db.products.filter((product) => product.categoryId === category.id).length;
+                const meta = getCategoryMeta(category.status);
+                return `
+                    <tr>
+                        <td>${category.id}</td>
+                        <td class="font-semibold text-gray-900">${category.name}</td>
+                        <td class="text-gray-500">${category.description || '--'}</td>
+                        <td>${count}</td>
+                        <td><span class="badge ${meta.className}">${meta.label}</span></td>
+                        <td>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="openCategoryForm('${category.id}')" class="text-[#a87b51] font-medium">Sửa</button>
+                                <button onclick="deleteCategory('${category.id}')" class="text-red-600 font-medium">Xóa</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" class="empty-state">Chưa có danh mục nào.</td></tr>';
+        }
+
+        function openCategoryForm(categoryId) {
+            const category = categoryId ? EleganceApp.getDb().categories.find((item) => item.id === categoryId) : null;
+            document.getElementById('categoryModalTitle').textContent = category ? 'Sửa danh mục' : 'Thêm danh mục';
+            document.getElementById('categoryId').value = category?.id || '';
+            document.getElementById('categoryName').value = category?.name || '';
+            document.getElementById('categoryStatus').value = category?.status || 'active';
+            document.getElementById('categoryDescription').value = category?.description || '';
+            document.getElementById('categoryModal').classList.remove('hidden');
+            document.getElementById('categoryModal').classList.add('flex');
+        }
+
+        function closeCategoryForm() {
+            document.getElementById('categoryModal').classList.add('hidden');
+            document.getElementById('categoryModal').classList.remove('flex');
+        }
+
+        function deleteCategory(categoryId) {
+            const db = EleganceApp.getDb();
+            if (db.products.some((product) => product.categoryId === categoryId)) {
+                EleganceApp.renderNotice('categoryNotice', 'Không thể xóa danh mục đang có sản phẩm. Hãy chuyển sản phẩm sang danh mục khác trước.', 'error');
+                return;
+            }
+            if (!confirm('Bạn chắc chắn muốn xóa danh mục này?')) return;
+            EleganceApp.updateDb((nextDb) => {
+                nextDb.categories = nextDb.categories.filter((item) => item.id !== categoryId);
+            });
+            EleganceApp.renderNotice('categoryNotice', 'Đã xóa danh mục.', 'success');
+            renderCategoryTable();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
+            if (!user) return;
+
+            document.getElementById('categorySearch').addEventListener('input', (event) => {
+                categoryKeyword = event.target.value;
+                renderCategoryTable();
+            });
+
+            document.getElementById('categoryForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+                const id = document.getElementById('categoryId').value;
+                const payload = {
+                    name: document.getElementById('categoryName').value.trim(),
+                    status: document.getElementById('categoryStatus').value,
+                    description: document.getElementById('categoryDescription').value.trim()
+                };
+
+                EleganceApp.updateDb((db) => {
+                    if (id) {
+                        const target = db.categories.find((item) => item.id === id);
+                        Object.assign(target, payload);
+                    } else {
+                        db.categories.push({
+                            id: `CAT-${String(db.categories.length + 1).padStart(2, '0')}`,
+                            productCount: 0,
+                            ...payload
+                        });
+                    }
+                });
+
+                closeCategoryForm();
+                EleganceApp.renderNotice('categoryNotice', id ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.', 'success');
+                renderCategoryTable();
+            });
+
+            renderCategoryTable();
+        });
+    </script>
+</body>
+
+</html>

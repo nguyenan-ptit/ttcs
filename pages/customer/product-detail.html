@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Sản Phẩm - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Custom style cho input số lượng ẩn đi nút tăng giảm mặc định */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="bg-white text-gray-800">
+
+    <header
+        class="container mx-auto px-6 py-6 flex items-center justify-between border-b border-gray-100 sticky top-0 bg-white z-50">
+        <a href="../../index.html"
+            class="text-3xl font-semibold text-[#a87b51] hover:text-[#8b633f] transition">
+            ÉLÉGANCE
+        </a>
+
+        <nav class="hidden md:flex space-x-8 text-sm font-semibold uppercase text-gray-700">
+            <a href="../../index.html" class="hover:text-[#a87b51] transition">Sản Phẩm</a>
+            <a href="#" class="text-[#a87b51] transition">Chi Tiết</a>
+            <a href="checkout.html" class="hover:text-[#a87b51] transition">Thanh Toán</a>
+        </nav>
+
+        <div class="flex items-center space-x-6">
+
+            <div data-customer-account data-login-path="../auth/login.html" data-orders-path="orders.html"
+                data-cart-path="cart.html" data-profile-path="profile.html"></div>
+
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-4 text-sm text-gray-500">
+        <a href="../../index.html" class="hover:text-[#a87b51]">Trang chủ</a> /
+        <a id="breadcrumbCategory" href="../../index.html" class="hover:text-[#a87b51]">Áo Sơ Mi</a> /
+        <span id="breadcrumbProduct" class="text-gray-800 font-medium">Áo Sơ Mi Trắng Oxford</span>
+    </div>
+
+    <main class="container mx-auto px-6 py-8">
+        <div class="flex flex-col md:flex-row gap-12">
+
+            <div class="md:w-1/2">
+                <div class="rounded-3xl overflow-hidden mb-4">
+                    <img id="productMainImage"
+                        src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800&auto=format&fit=crop"
+                        alt="Áo Sơ Mi Trắng" class="w-full h-auto object-cover">
+                </div>
+                <div id="productThumbs" class="grid grid-cols-4 gap-4">
+                    <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=200&auto=format&fit=crop"
+                        class="rounded-xl border-2 border-[#a87b51] cursor-pointer">
+                    <img src="https://images.unsplash.com/photo-1596755094514-f87e32f8522b?q=80&w=200&auto=format&fit=crop"
+                        class="rounded-xl border border-gray-200 opacity-70 hover:opacity-100 cursor-pointer transition">
+                </div>
+            </div>
+
+            <div class="md:w-1/2 flex flex-col justify-center">
+                <h1 id="productName" class="text-3xl md:text-4xl font-semibold text-gray-900 mb-2">Áo Sơ Mi Trắng Oxford</h1>
+                <p id="productSku" class="text-gray-500 mb-6">Mã SP: #PRD-001</p>
+
+                <p id="productPrice" class="text-2xl font-bold text-black mb-6">350.000 đ</p>
+
+                <p id="productDescription" class="text-gray-600 mb-8 leading-relaxed">
+                    Chất liệu cotton cao cấp, thoáng mát và thấm hút mồ hôi tốt. Dáng áo ôm vừa vặn (Slim fit) mang lại
+                    vẻ ngoài thanh lịch, chuyên nghiệp chốn công sở nhưng vẫn thoải mái cho mọi hoạt động trong ngày.
+                </p>
+
+                <form id="addToCartForm">
+
+                    <div class="mb-6">
+                        <span class="block text-sm font-semibold text-gray-900 mb-3 uppercase">Màu sắc:</span>
+                        <div id="colorOptions" class="flex flex-wrap gap-3">
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="color" value="Trắng" class="peer sr-only" checked>
+                                <div
+                                    class="w-8 h-8 rounded-full bg-[#fdf5e6] border-2 border-gray-300 peer-checked:border-[#a87b51] peer-checked:ring-2 peer-checked:ring-[#a87b51] peer-checked:ring-offset-2 transition">
+                                </div>
+                            </label>
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="color" value="Xanh" class="peer sr-only">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-[#2c3e50] border-2 border-gray-300 peer-checked:border-[#a87b51] peer-checked:ring-2 peer-checked:ring-[#a87b51] peer-checked:ring-offset-2 transition">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <div class="flex justify-between mb-3">
+                            <span class="block text-sm font-semibold text-gray-900 uppercase">Kích cỡ:</span>
+                            <a href="#" class="text-sm text-[#a87b51] underline">Hướng dẫn chọn size</a>
+                        </div>
+                        <div id="sizeOptions" class="flex flex-wrap gap-3">
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="size" value="M" class="peer sr-only" checked>
+                                <div
+                                    class="w-12 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-600 font-medium peer-checked:border-[#a87b51] peer-checked:bg-[#a87b51] peer-checked:text-white transition hover:border-[#a87b51]">
+                                    M</div>
+                            </label>
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="size" value="L" class="peer sr-only">
+                                <div
+                                    class="w-12 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-600 font-medium peer-checked:border-[#a87b51] peer-checked:bg-[#a87b51] peer-checked:text-white transition hover:border-[#a87b51]">
+                                    L</div>
+                            </label>
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="size" value="XL" class="peer sr-only" disabled>
+                                <div
+                                    class="w-12 h-10 flex items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-gray-300 font-medium cursor-not-allowed line-through">
+                                    XL</div>
+                            </label>
+                        </div>
+                        <p id="stockHint" class="text-xs text-green-600 mt-2">Còn 50 sản phẩm trong kho</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex border border-gray-300 rounded-lg w-32 h-14">
+                            <button type="button" onclick="decrementQty()"
+                                class="px-4 text-gray-500 hover:text-black transition">-</button>
+                            <input type="number" id="qty" name="quantity" value="1" min="1" max="50"
+                                class="w-full text-center font-semibold text-gray-800 focus:outline-none">
+                            <button type="button" onclick="incrementQty()"
+                                class="px-4 text-gray-500 hover:text-black transition">+</button>
+                        </div>
+                        <button type="button" onclick="addToCart()"
+                            class="flex-1 bg-[#1a1a1a] text-white rounded-lg font-semibold hover:bg-[#a87b51] transition duration-300 h-14">
+                            THÊM VÀO GIỎ HÀNG
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <section class="mt-16 border-t border-gray-100 pt-12">
+            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
+                <div>
+                    <p class="text-xs uppercase text-[#a87b51] font-semibold mb-3">Đánh giá sản phẩm</p>
+                    <h2 id="feedbackHeading" class="text-3xl font-semibold text-gray-900">Phản hồi từ khách hàng</h2>
+                    <p id="feedbackIntro" class="text-gray-500 mt-3 max-w-2xl">Những nhận xét đã được ghi nhận sau khi khách hàng mua và trải nghiệm sản phẩm.</p>
+                </div>
+                <a href="#feedbackForm"
+                    class="inline-flex items-center justify-center bg-[#1a1a1a] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#a87b51] transition">
+                    Gửi đánh giá
+                </a>
+            </div>
+
+            <div class="grid lg:grid-cols-[0.85fr_1.15fr] gap-8">
+                <div class="bg-[#fcfaf8] border border-gray-100 rounded-3xl p-6">
+                    <div class="flex items-end gap-3">
+                        <span id="ratingAverage" class="text-5xl font-bold text-gray-900">4.8</span>
+                        <span class="text-gray-500 mb-2">/ 5</span>
+                    </div>
+                    <div id="ratingStars" class="flex text-[#a87b51] mt-3" aria-label="4.8 trên 5 sao">
+                        <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                    </div>
+                    <p id="ratingCount" class="text-sm text-gray-500 mt-3">Dựa trên 126 lượt đánh giá</p>
+
+                    <div id="ratingDistribution" class="space-y-3 mt-6"></div>
+                </div>
+
+                <div id="reviewList" class="space-y-4"></div>
+            </div>
+
+            <div id="feedbackForm" class="mt-10 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">Viết đánh giá của bạn</h3>
+                    <p class="text-sm text-gray-500 mt-2">Chia sẻ trải nghiệm để cửa hàng phục vụ tốt hơn.</p>
+                </div>
+                <form onsubmit="submitFeedback(event)" class="grid md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Họ và tên</label>
+                        <input id="feedbackName" type="text"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
+                            placeholder="Nhập tên của bạn">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Số sao</label>
+                        <select id="feedbackRating"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#a87b51]">
+                            <option value="5">5 sao - Rất hài lòng</option>
+                            <option value="4">4 sao - Hài lòng</option>
+                            <option value="3">3 sao - Bình thường</option>
+                            <option value="2">2 sao - Chưa hài lòng</option>
+                            <option value="1">1 sao - Cần cải thiện</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Nội dung đánh giá</label>
+                        <textarea id="feedbackContent"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51] min-h-[120px]"
+                            placeholder="Nhập nhận xét về chất liệu, form dáng, đóng gói hoặc tư vấn..."></textarea>
+                    </div>
+                    <div id="feedbackMessage" class="hidden md:col-span-2 rounded-xl border px-4 py-3 text-sm"></div>
+                    <div class="md:col-span-2 flex justify-end">
+                        <button type="submit"
+                            class="bg-[#1a1a1a] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#a87b51] transition">
+                            Gửi đánh giá
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-gray-100 py-8 mt-12">
+        <div class="container mx-auto px-6 text-center text-sm text-gray-500">
+            <p class="mb-2 text-xl font-semibold text-[#a87b51]">ÉLÉGANCE</p>
+            <p>© 2026 Bản quyền thuộc về Hệ thống Cửa hàng Thời trang.</p>
+        </div>
+    </footer>
+
+    <script src="../../assets/js/main.js"></script>
+    <script src="../../assets/js/product.js"></script>
+    <script>
+        function submitFeedback(event) {
+            event.preventDefault();
+            const name = document.getElementById('feedbackName').value.trim();
+            const rating = Number(document.getElementById('feedbackRating').value || 5);
+            const content = document.getElementById('feedbackContent').value.trim();
+            const message = document.getElementById('feedbackMessage');
+
+            if (!name || !content) {
+                message.className = 'md:col-span-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700';
+                message.textContent = 'Vui lòng nhập họ tên và nội dung đánh giá.';
+                message.classList.remove('hidden');
+                return;
+            }
+
+            if (typeof addSubmittedReview === 'function') {
+                addSubmittedReview({ name, rating, content });
+            }
+
+            message.className = 'md:col-span-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700';
+            message.textContent = 'Cảm ơn bạn đã gửi đánh giá. Phản hồi sẽ được kiểm duyệt trước khi hiển thị.';
+            message.classList.remove('hidden');
+            event.target.reset();
+        }
+    </script>
+</body>
+
+</html>

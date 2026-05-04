@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phản hồi đánh giá - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="order-list.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh b&#225;n h&#224;ng</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <a href="order-list.html" class="sidebar-link"><span>Quản lý đơn hàng</span></a>
+            <a href="return.html" class="sidebar-link"><span>Xử lý đổi trả</span></a>
+            <a href="feedback.html" class="sidebar-link active"><span>Phản hồi đánh giá</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</div>
+                <div id="saleUserName" class="mt-2 font-semibold">Nhân viên sale</div>
+            </div>
+            <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Phản hồi đánh giá</h1>
+                <p class="dashboard-header-copy">Theo dõi đánh giá của khách hàng và ghi nhận phản hồi từ nhân viên bán hàng.</p>
+            </div>
+            <div class="dashboard-header-actions">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="saleHeaderName">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</b></span>
+                    <div id="saleAvatar" class="dashboard-avatar">S</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <section class="surface-card">
+                <div class="surface-card-body">
+                    <div id="feedbackNotice" class="hidden mb-5"></div>
+                    <div id="feedbackList" class="quick-list"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="../../assets/js/main.js"></script>
+    <script>
+        const feedbacks = [
+            {
+                id: 'FB-001',
+                customer: 'Hoàng Văn Nam',
+                orderId: 'ORD-102401',
+                rating: 4,
+                content: 'Sản phẩm đẹp, cần tư vấn kỹ hơn về size trước khi giao.'
+            },
+            {
+                id: 'FB-002',
+                customer: 'Trần Thị Mai',
+                orderId: 'ORD-102389',
+                rating: 5,
+                content: 'Nhân viên hỗ trợ nhanh, đóng gói đẹp.'
+            },
+            {
+                id: 'FB-003',
+                customer: 'Lê Minh Châu',
+                orderId: 'ORD-102377',
+                rating: 3,
+                content: 'Thời gian giao hơi lâu, mong được cập nhật trạng thái thường xuyên hơn.'
+            }
+        ];
+
+        function renderFeedbacks() {
+            document.getElementById('feedbackList').innerHTML = feedbacks.map((feedback) => `
+                <article class="quick-list-item">
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <h2 class="font-semibold text-gray-900">${feedback.id} - ${feedback.customer}</h2>
+                            <span class="badge badge-gold">${feedback.rating}/5 sao</span>
+                            <span class="text-sm text-gray-500">${feedback.orderId}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">${feedback.content}</p>
+                        <div class="mt-4 grid md:grid-cols-[1fr_auto] gap-3">
+                            <input id="reply-${feedback.id}" class="form-input" type="text" placeholder="Nhập nội dung phản hồi">
+                            <button class="btn-primary" type="button" onclick="replyFeedback('${feedback.id}')">Gửi phản hồi</button>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function replyFeedback(id) {
+            const input = document.getElementById(`reply-${id}`);
+            if (!input.value.trim()) {
+                EleganceApp.renderNotice('feedbackNotice', 'Vui lòng nhập nội dung phản hồi trước khi gửi.', 'error');
+                input.focus();
+                return;
+            }
+            EleganceApp.renderNotice('feedbackNotice', `Đã ghi nhận phản hồi cho đánh giá ${id}.`, 'success');
+            input.value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['SALE'], '../auth/login.html');
+            if (!user) return;
+            document.getElementById('saleUserName').textContent = user.name;
+            EleganceApp.hydrateUser('saleHeaderName', 'saleAvatar', user.name);
+            renderFeedbacks();
+        });
+    </script>
+</body>
+
+</html>

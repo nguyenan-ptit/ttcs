@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý thông tin cửa hàng - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../assets/css/style.css">
+    <style>body { font-family: 'Montserrat', sans-serif; }</style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="../dashboard.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">Bảng điều hành quản lý</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu chính</div>
+            <a href="store-info.html" class="sidebar-link active"><span>Quản lý thông tin cửa hàng</span></a>
+            <a href="../category/category-list.html" class="sidebar-link"><span>Quản lý danh mục</span></a>
+            <a href="../product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
+            <a href="../promotion/promotion-list.html" class="sidebar-link"><span>Quản lý khuyến mãi</span></a>
+            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Quản lý</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+            </div>
+            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Quản lý thông tin cửa hàng</h1>
+                <p class="dashboard-header-copy">Xem và sửa thông tin liên hệ, giờ mở cửa, mô tả và chính sách dịch vụ của cửa hàng.</p>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="grid xl:grid-cols-[1fr_0.8fr] gap-8">
+                <section class="surface-card">
+                    <div class="surface-card-body">
+                        <div id="storeNotice" class="hidden mb-5"></div>
+                        <form id="storeForm" class="stack">
+                            <div class="form-grid">
+                                <div>
+                                    <label class="form-label" for="storeName">Tên cửa hàng</label>
+                                    <input class="form-input" id="storeName" type="text" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="storeManager">Quản lý phụ trách</label>
+                                    <input class="form-input" id="storeManager" type="text" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="storePhone">Số điện thoại</label>
+                                    <input class="form-input" id="storePhone" type="text" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="storeHotline">Hotline</label>
+                                    <input class="form-input" id="storeHotline" type="text" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="storeEmail">Email</label>
+                                    <input class="form-input" id="storeEmail" type="email" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="storeHours">Giờ mở cửa</label>
+                                    <input class="form-input" id="storeHours" type="text" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="storeAddress">Địa chỉ</label>
+                                <input class="form-input" id="storeAddress" type="text" required>
+                            </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label class="form-label" for="storeFacebook">Facebook</label>
+                                    <input class="form-input" id="storeFacebook" type="text">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="storeInstagram">Instagram</label>
+                                    <input class="form-input" id="storeInstagram" type="text">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="storeDescription">Mô tả cửa hàng</label>
+                                <textarea class="form-textarea" id="storeDescription"></textarea>
+                            </div>
+                            <div>
+                                <label class="form-label" for="storePolicy">Chính sách cửa hàng</label>
+                                <textarea class="form-textarea" id="storePolicy" placeholder="Ví dụ: đổi size trong 7 ngày, miễn phí vận chuyển từ 500.000đ..."></textarea>
+                            </div>
+                            <div class="flex justify-end">
+                                <button class="btn-primary" type="submit">Lưu thông tin</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="stack">
+                    <div class="surface-card">
+                        <div class="surface-card-body">
+                            <div class="eyebrow">Xem trước</div>
+                            <h2 class="section-title" id="storePreviewName">Élégance</h2>
+                            <div id="storePreviewCopy" class="mt-5 space-y-3 text-sm text-gray-600"></div>
+                        </div>
+                    </div>
+                    <div class="surface-card surface-card-muted">
+                        <div class="surface-card-body">
+                            <div class="eyebrow">Chính sách</div>
+                            <h2 class="section-title">Thông tin hiển thị cho khách</h2>
+                            <div id="storePolicyPreview" class="mt-5 text-sm text-gray-600 leading-relaxed"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="../../../assets/js/main.js"></script>
+    <script>
+        function bindPreview() {
+            const name = document.getElementById('storeName').value;
+            const address = document.getElementById('storeAddress').value;
+            const phone = document.getElementById('storePhone').value;
+            const hours = document.getElementById('storeHours').value;
+            const policy = document.getElementById('storePolicy').value;
+            document.getElementById('storePreviewName').textContent = name;
+            document.getElementById('storePreviewCopy').innerHTML = `
+                <p><b>Địa chỉ:</b> ${address}</p>
+                <p><b>Điện thoại:</b> ${phone}</p>
+                <p><b>Khung giờ:</b> ${hours}</p>
+            `;
+            document.getElementById('storePolicyPreview').textContent = policy || 'Chưa nhập chính sách.';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
+            if (!user) return;
+            const store = EleganceApp.getDb().storeInfo;
+            Object.entries({
+                storeName: store.name,
+                storeManager: store.manager,
+                storePhone: store.phone,
+                storeHotline: store.hotline,
+                storeEmail: store.email,
+                storeHours: store.openHours,
+                storeAddress: store.address,
+                storeFacebook: store.facebook,
+                storeInstagram: store.instagram,
+                storeDescription: store.description,
+                storePolicy: store.policy || 'Đổi size trong 7 ngày cho sản phẩm còn tem. Miễn phí vận chuyển cho đơn hàng từ 500.000đ.'
+            }).forEach(([id, value]) => {
+                document.getElementById(id).value = value || '';
+                document.getElementById(id).addEventListener('input', bindPreview);
+            });
+            bindPreview();
+
+            document.getElementById('storeForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+                EleganceApp.updateDb((db) => {
+                    db.storeInfo = {
+                        name: document.getElementById('storeName').value.trim(),
+                        manager: document.getElementById('storeManager').value.trim(),
+                        phone: document.getElementById('storePhone').value.trim(),
+                        hotline: document.getElementById('storeHotline').value.trim(),
+                        email: document.getElementById('storeEmail').value.trim(),
+                        openHours: document.getElementById('storeHours').value.trim(),
+                        address: document.getElementById('storeAddress').value.trim(),
+                        facebook: document.getElementById('storeFacebook').value.trim(),
+                        instagram: document.getElementById('storeInstagram').value.trim(),
+                        description: document.getElementById('storeDescription').value.trim(),
+                        policy: document.getElementById('storePolicy').value.trim()
+                    };
+                });
+                EleganceApp.renderNotice('storeNotice', 'Đã cập nhật thông tin và chính sách cửa hàng.', 'success');
+            });
+        });
+    </script>
+</body>
+
+</html>

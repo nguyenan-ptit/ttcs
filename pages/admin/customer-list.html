@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý khách hàng - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <aside class="w-64 bg-[#1a1a1a] text-white flex flex-col h-full shadow-2xl">
+        <div class="h-20 flex items-center justify-center border-b border-gray-700">
+            <h1 class="text-xl font-bold tracking-widest text-[#a87b51]">ÉLÉGANCE ADMIN</h1>
+        </div>
+
+        <nav class="flex-grow py-6 px-4 space-y-2">
+            <a href="user-list.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý nhân viên</span>
+            </a>
+
+            <a href="customer-list.html"
+                class="flex items-center gap-3 bg-[#a87b51] text-white px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                    </path>
+                </svg>
+                <span class="font-medium">Quản lý khách hàng</span>
+            </a>
+
+            <a href="manage-ui.html"
+                class="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-gray-800 px-4 py-3 rounded-xl transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                <span class="font-medium">Quản lý giao diện</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-700">
+            <button onclick="logout()"
+                class="flex items-center gap-3 text-gray-400 hover:text-red-400 w-full px-4 py-2 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                <span class="font-medium">Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="h-20 bg-white flex items-center justify-between px-8 shadow-sm z-10">
+            <h2 class="text-2xl font-semibold text-gray-800">Danh sách khách hàng</h2>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-500">Xin chào, <b id="adminNameDisplay"
+                        class="text-black">Admin</b></span>
+                <div class="w-10 h-10 bg-[#a87b51] rounded-full flex items-center justify-center text-white font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+
+            <div class="flex justify-between items-center mb-6">
+                <div class="relative w-72">
+                    <input type="text" id="searchCustomer" placeholder="Tìm theo username hoặc tên..."
+                        class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a87b51]">
+                    <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+
+                <div class="text-sm text-gray-500 italic">
+                    * Admin chỉ có quyền Khóa hoặc Xóa tài khoản khách hàng.
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                            <th class="px-6 py-4 font-medium">ID</th>
+                            <th class="px-6 py-4 font-medium">Username</th>
+                            <th class="px-6 py-4 font-medium">Họ & Tên</th>
+                            <th class="px-6 py-4 font-medium">Trạng thái</th>
+                            <th class="px-6 py-4 font-medium text-right">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerTableBody" class="divide-y divide-gray-100">
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Mock data: Chỉ chứa danh sách Khách hàng (Role = CUSTOMER)
+        let mockCustomers = [
+            { id: 5, username: 'khach_hang1', fullName: 'Hoàng Văn Nam', role: 'CUSTOMER', status: 'Active' },
+            { id: 6, username: 'khach_hang2', fullName: 'Trần Thị Mai', role: 'CUSTOMER', status: 'Active' },
+            { id: 7, username: 'spam_user99', fullName: 'Nguyễn Văn Spam', role: 'CUSTOMER', status: 'Locked' }
+        ];
+
+        // Render bảng
+        function renderCustomerTable(data) {
+            const tbody = document.getElementById('customerTableBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Không tìm thấy khách hàng nào.</td></tr>`;
+                return;
+            }
+
+            data.forEach((user) => {
+                const statusBadge = user.status === 'Active'
+                    ? `<span class="text-green-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-green-500"></div> Hoạt động</span>`
+                    : `<span class="text-red-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div> Đã khóa</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-gray-500">#${user.id}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-800">${user.username}</td>
+                        <td class="px-6 py-4 text-gray-600">${user.fullName}</td>
+                        <td class="px-6 py-4 font-medium text-sm">${statusBadge}</td>
+                        <td class="px-6 py-4 text-right space-x-4 text-sm">
+                            <button onclick="toggleLock(${user.id}, '${user.status}')" class="text-[#a87b51] hover:text-[#8b633f] font-medium transition">
+                                ${user.status === 'Active' ? 'Khóa' : 'Mở khóa'}
+                            </button>
+                            <button onclick="deleteCustomer(${user.id})" class="text-red-500 hover:text-red-700 font-medium transition">
+                                Xóa
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Xử lý nút Khóa/Mở Khóa
+        function toggleLock(id, currentStatus) {
+            const actionText = currentStatus === 'Active' ? 'khóa' : 'mở khóa';
+            if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản khách hàng này không?`)) {
+                const userIndex = mockCustomers.findIndex(u => u.id === id);
+                mockCustomers[userIndex].status = currentStatus === 'Active' ? 'Locked' : 'Active';
+                renderCustomerTable(mockCustomers);
+            }
+        }
+
+        // Xử lý nút Xóa
+        function deleteCustomer(id) {
+            if (confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN khách hàng này khỏi hệ thống không? Hành động này không thể hoàn tác!`)) {
+                // Lọc bỏ user có id trùng khớp (Mock xóa)
+                mockCustomers = mockCustomers.filter(u => u.id !== id);
+                renderCustomerTable(mockCustomers);
+            }
+        }
+
+        // Xử lý tìm kiếm
+        document.getElementById('searchCustomer').addEventListener('input', function (e) {
+            const keyword = e.target.value.toLowerCase();
+            const filtered = mockCustomers.filter(u =>
+                u.username.toLowerCase().includes(keyword) ||
+                u.fullName.toLowerCase().includes(keyword)
+            );
+            renderCustomerTable(filtered);
+        });
+
+        // Xử lý đăng xuất
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '../auth/login.html';
+        }
+
+        // Khởi chạy khi load trang
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (currentUser && currentUser.name) {
+                document.getElementById('adminNameDisplay').innerText = currentUser.name;
+            }
+            renderCustomerTable(mockCustomers);
+        });
+    </script>
+</body>
+
+</html>

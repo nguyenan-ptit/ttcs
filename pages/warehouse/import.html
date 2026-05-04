@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thực hiện nhập kho - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="import.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh kho</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <a href="import.html" class="sidebar-link active"><span>Thực hiện nhập kho</span></a>
+            <a href="update-stock.html" class="sidebar-link"><span>Cập nhật tồn kho</span></a>
+            <a href="return.html" class="sidebar-link"><span>Nhận hàng đổi trả</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n kho</div>
+                <div id="warehouseUserName" class="mt-2 font-semibold">Nhân viên kho</div>
+            </div>
+            <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Thực hiện nhập kho</h1>
+                <p class="dashboard-header-copy">Nhân viên kho phải đăng nhập để ghi nhận hàng nhập theo từng biến thể màu và size.</p>
+            </div>
+            <div class="dashboard-header-actions">
+                <a href="update-stock.html" class="btn-secondary">Cập nhật tồn kho</a>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="warehouseHeaderName">Nh&#226;n vi&#234;n kho</b></span>
+                    <div id="warehouseAvatar" class="dashboard-avatar">K</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="grid xl:grid-cols-[1fr_0.95fr] gap-8">
+                <section class="surface-card">
+                    <div class="surface-card-body">
+                        <div id="importNotice" class="hidden mb-5"></div>
+                        <form id="importForm" class="stack">
+                            <div class="form-grid">
+                                <div>
+                                    <label class="form-label" for="importProduct">Sản phẩm</label>
+                                    <select id="importProduct" class="form-select"></select>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="importVariant">Biến thể màu / size</label>
+                                    <select id="importVariant" class="form-select"></select>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label class="form-label" for="importSupplier">Nhà cung cấp</label>
+                                    <input id="importSupplier" class="form-input" type="text" value="Xưởng may Gia Lâm">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="importUnits">Số lượng nhập</label>
+                                    <input id="importUnits" class="form-input" type="text" inputmode="numeric" value="20">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="importCost">Đơn giá nhập</label>
+                                    <input id="importCost" class="form-input" type="text" inputmode="numeric" value="180000">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="importDate">Ngày nhập</label>
+                                    <input id="importDate" class="form-input" type="date">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="importNote">Ghi chú</label>
+                                <textarea id="importNote" class="form-textarea" placeholder="Ví dụ: nhập bù size bán chạy, hàng về đủ chứng từ..."></textarea>
+                            </div>
+                            <div class="flex justify-end">
+                                <button class="btn-primary" type="submit">Ghi nhận nhập kho</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="surface-card">
+                    <div class="surface-card-body">
+                        <div class="eyebrow">Gần đây</div>
+                        <h2 class="section-title">Phiếu nhập kho</h2>
+                        <div id="importReceiptList" class="quick-list mt-6"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="../../assets/js/main.js"></script>
+    <script>
+        function getCurrentStaffName() {
+            return EleganceApp.getCurrentUser()?.name || 'Nhân viên kho';
+        }
+
+        function fillVariantSelect(productId) {
+            const variants = EleganceApp.getProductVariants(productId);
+            const select = document.getElementById('importVariant');
+            select.innerHTML = variants.map((variant) => `
+                <option value="${variant.id}">${EleganceApp.getVariantLabel(variant)} - tồn hiện tại: ${variant.stock}</option>
+            `).join('');
+        }
+
+        function renderReceipts() {
+            const receipts = EleganceApp.getDb().inventoryReceipts;
+            document.getElementById('importReceiptList').innerHTML = receipts.map((receipt) => `
+                <div class="quick-list-item">
+                    <div>
+                        <div class="font-semibold text-gray-900">${receipt.id} - ${receipt.productName}</div>
+                        <div class="text-sm text-gray-500 mt-1">${receipt.variantLabel} • ${receipt.quantity} sản phẩm • ${receipt.supplier}</div>
+                    </div>
+                    <span class="badge badge-success">${EleganceApp.formatDate(receipt.date)}</span>
+                </div>
+            `).join('') || '<div class="empty-state">Chưa có phiếu nhập kho.</div>';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['WAREHOUSE'], '../auth/login.html');
+            if (!user) return;
+            document.getElementById('warehouseUserName').textContent = user.name;
+            EleganceApp.hydrateUser('warehouseHeaderName', 'warehouseAvatar', user.name);
+
+            const productSelect = document.getElementById('importProduct');
+            const products = EleganceApp.getDb().products;
+            productSelect.innerHTML = products.map((product) => `
+                <option value="${product.id}">${product.sku} - ${product.name}</option>
+            `).join('');
+            document.getElementById('importDate').value = new Date().toISOString().slice(0, 10);
+            fillVariantSelect(productSelect.value);
+            renderReceipts();
+
+            productSelect.addEventListener('change', () => fillVariantSelect(productSelect.value));
+
+            document.getElementById('importForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+                try {
+                    const receipt = EleganceApp.createInventoryReceipt({
+                        variantId: document.getElementById('importVariant').value,
+                        supplier: document.getElementById('importSupplier').value,
+                        quantity: document.getElementById('importUnits').value,
+                        unitCost: document.getElementById('importCost').value,
+                        note: document.getElementById('importNote').value,
+                        receivedDate: document.getElementById('importDate').value,
+                        staff: getCurrentStaffName()
+                    });
+                    EleganceApp.renderNotice('importNotice', `Đã ghi nhận phiếu ${receipt.id} và cập nhật tồn kho.`, 'success');
+                    fillVariantSelect(productSelect.value);
+                    renderReceipts();
+                } catch (error) {
+                    EleganceApp.renderNotice('importNotice', error.message, 'error');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

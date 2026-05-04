@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khong gian khach hang - Elegance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="elegance-page text-gray-800 min-h-screen">
+    <header class="bg-white/90 backdrop-blur sticky top-0 z-30 border-b border-[#ebe5dc]">
+        <div class="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
+            <a href="../../index.html" class="text-3xl font-serif tracking-[0.2em] text-[#a87b51]">ELEGANCE</a>
+            <nav class="hidden md:flex items-center gap-8 text-sm font-semibold uppercase text-gray-600">
+                <a href="../../index.html" class="hover:text-[#a87b51] transition">San pham</a>
+                <a href="cart.html" class="hover:text-[#a87b51] transition">Gio hang</a>
+                <a href="checkout.html" class="hover:text-[#a87b51] transition">Thanh toan</a>
+                <a href="orders.html" class="hover:text-[#a87b51] transition">Đơn hàng</a>
+            </nav>
+            <div class="flex items-center gap-3">
+                <a href="orders.html" class="hover:text-[#a87b51] transition" title="Đơn hàng">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5h6M9 9h6M9 13h3m-6 8h12a2 2 0 002-2V5a2 2 0 00-2-2H8l-4 4v12a2 2 0 002 2z"></path>
+                    </svg>
+                </a>
+                <div data-customer-account data-login-path="../auth/login.html" data-orders-path="orders.html"
+                    data-cart-path="cart.html" data-profile-path="profile.html"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-10">
+        <section class="grid lg:grid-cols-[1.4fr_0.8fr] gap-8 items-stretch">
+            <div class="surface-card overflow-hidden">
+                <div class="relative h-full min-h-[420px]">
+                    <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=1400&auto=format&fit=crop"
+                        alt="Bo suu tap moi" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/35"></div>
+                    <div class="relative z-10 px-8 md:px-12 py-16 h-full flex flex-col justify-end text-white">
+                        <p class="uppercase tracking-[0.3em] text-xs mb-5">Khong gian mua sam</p>
+                        <h1 class="font-serif text-4xl md:text-5xl max-w-xl leading-tight mb-5">Bo suu tap duoc ca nhan hoa
+                            cho nhom khach hang trung thanh.</h1>
+                        <p class="max-w-lg text-white/80 leading-relaxed mb-8">Tap hop cac mau ban chay, uu dai dang ap dung
+                            va trang thai don gan nhat trong mot man hinh.</p>
+                        <div class="flex flex-wrap gap-3">
+                            <a href="../../index.html" class="btn-primary">Mua sam ngay</a>
+                            <a href="orders.html" class="btn-secondary bg-white/95">Đơn gần đây</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stack">
+                <div class="metric-card">
+                    <div class="metric-label">Uu dai dang ap dung</div>
+                    <div id="homePromotionCount" class="metric-value">0</div>
+                    <p class="metric-footnote">Khuyen mai hoat dong tu khu vuc manager.</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Tong gia tri don da mua</div>
+                    <div id="homeSpent" class="metric-value">0 d</div>
+                    <p class="metric-footnote">Du lieu mo phong lay tu lich su mua hang.</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Don hang gan nhat</div>
+                    <div id="homeLastOrder" class="text-2xl font-semibold text-gray-900 mt-4">Chua co</div>
+                    <p id="homeLastOrderMeta" class="metric-footnote">San sang tiep tuc mua sam.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid xl:grid-cols-[1.2fr_0.8fr] gap-8 mt-8">
+            <div class="surface-card">
+                <div class="surface-card-header">
+                    <div>
+                        <div class="eyebrow">Goi y nhanh</div>
+                        <h2 class="section-title">San pham nen xem tiep</h2>
+                    </div>
+                    <a href="../../index.html" class="btn-ghost">Xem tat ca</a>
+                </div>
+                <div id="homeProductGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 p-6"></div>
+            </div>
+
+            <div class="stack">
+                <div class="surface-card">
+                    <div class="surface-card-header">
+                        <div>
+                            <div class="eyebrow">Tai khoan</div>
+                            <h2 class="section-title">Trang thai mua sam</h2>
+                        </div>
+                    </div>
+                    <div class="surface-card-body quick-list" id="customerOrderList"></div>
+                </div>
+                <div class="surface-card surface-card-muted">
+                    <div class="surface-card-body">
+                        <div class="eyebrow">Ghi chu</div>
+                        <h2 class="section-title">Dich vu cua hang</h2>
+                        <div class="mt-5 space-y-4 text-sm text-gray-600 leading-relaxed">
+                            <p>Free ship voi don tu 500.000d va doi size trong 7 ngay cho san pham con tem.</p>
+                            <p>Tu van chat lieu, size va phoi do truc tiep qua hotline 1900 1234.</p>
+                            <p>Khach da dang nhap co the tiep tuc thanh toan nhanh ma khong can nhap lai thong tin co ban.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../assets/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.getCurrentUser();
+            const db = EleganceApp.getDb();
+            const activePromotions = db.promotions.filter((promotion) => promotion.status === 'active').length;
+            document.getElementById('homePromotionCount').textContent = activePromotions;
+
+            const customer = db.customers.find((item) => item.name === user?.name) || db.customers[0];
+            document.getElementById('homeSpent').textContent = EleganceApp.formatCurrency(customer?.totalSpent || 0);
+
+            const latestOrder = db.orders.find((order) => order.customerName === customer?.name) || db.orders[0];
+            if (latestOrder) {
+                document.getElementById('homeLastOrder').textContent = latestOrder.id;
+                document.getElementById('homeLastOrderMeta').textContent =
+                    EleganceApp.orderStatusMeta(latestOrder.status).label + ' • ' + EleganceApp.formatDate(latestOrder.date);
+            }
+
+            document.getElementById('homeProductGrid').innerHTML = db.products.slice(0, 3).map((product) => `
+                <a href="product-detail.html?id=${product.id}" class="block border border-[#ebe5dc] rounded-[20px] overflow-hidden bg-white hover:-translate-y-1 transition">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-64 object-cover">
+                    <div class="p-5">
+                        <p class="text-sm text-gray-500">${product.sku}</p>
+                        <h3 class="font-medium text-gray-900 mt-2">${product.name}</h3>
+                        <div class="mt-4 flex items-center justify-between">
+                            <span class="font-semibold text-[#a87b51]">${EleganceApp.formatCurrency(product.price)}</span>
+                            <span class="text-xs uppercase tracking-[0.2em] text-gray-400">${product.stock} ton</span>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+
+            const customerOrders = db.orders.filter((order) => order.customerName === customer?.name).slice(0, 3);
+            document.getElementById('customerOrderList').innerHTML = customerOrders.map((order) => {
+                const meta = EleganceApp.orderStatusMeta(order.status);
+                return `
+                    <div class="quick-list-item">
+                        <div>
+                            <div class="font-semibold text-gray-900">${order.id}</div>
+                            <div class="text-sm text-gray-500 mt-1">${EleganceApp.formatDate(order.date)} • ${order.items.length} san pham</div>
+                        </div>
+                        <span class="badge ${meta.className}">${meta.label}</span>
+                    </div>
+                `;
+            }).join('') || '<div class="empty-state">Chua co don hang nao.</div>';
+        });
+    </script>
+</body>
+
+</html>

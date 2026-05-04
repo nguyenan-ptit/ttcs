@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý khuyến mãi - Élégance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../assets/css/style.css">
+    <style>body { font-family: 'Montserrat', sans-serif; }</style>
+</head>
+
+<body class="elegance-shell">
+    <aside class="dashboard-sidebar">
+        <div class="dashboard-brand">
+            <a href="../dashboard.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
+            <div class="dashboard-brand-subtitle">Bảng điều hành quản lý</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu chính</div>
+            <a href="../store/store-info.html" class="sidebar-link"><span>Quản lý thông tin cửa hàng</span></a>
+            <a href="../category/category-list.html" class="sidebar-link"><span>Quản lý danh mục</span></a>
+            <a href="../product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
+            <a href="promotion-list.html" class="sidebar-link active"><span>Quản lý khuyến mãi</span></a>
+            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="text-xs uppercase text-white/45">Quản lý</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+            </div>
+            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header-title">Quản lý khuyến mãi</h1>
+                <p class="dashboard-header-copy">Thêm mới, sửa, xóa chương trình khuyến mãi và mã giảm giá.</p>
+            </div>
+            <button onclick="openPromotionForm()" class="btn-primary">Thêm khuyến mãi</button>
+        </header>
+
+        <div class="dashboard-content">
+            <section class="surface-card">
+                <div class="surface-card-body">
+                    <div id="promotionNotice" class="hidden mb-5"></div>
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã giảm giá</th>
+                                    <th>Tên chương trình</th>
+                                    <th>Loại</th>
+                                    <th>Giá trị</th>
+                                    <th>Thời gian</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="promotionTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="promotionModal" class="hidden fixed inset-0 z-50 bg-black/40 items-center justify-center p-6">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-xl">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 id="promotionModalTitle" class="text-xl font-semibold text-gray-900">Thêm khuyến mãi</h2>
+            </div>
+            <form id="promotionForm" class="p-6 stack">
+                <input id="promotionId" type="hidden">
+                <div class="form-grid">
+                    <div>
+                        <label class="form-label" for="promotionName">Tên chương trình</label>
+                        <input class="form-input" id="promotionName" type="text" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="promotionCode">Mã giảm giá</label>
+                        <input class="form-input" id="promotionCode" type="text" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="promotionType">Loại ưu đãi</label>
+                        <select class="form-select" id="promotionType">
+                            <option value="percent">Giảm theo phần trăm</option>
+                            <option value="fixed">Giảm số tiền</option>
+                            <option value="gift">Quà tặng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="promotionValue">Giá trị</label>
+                        <input class="form-input" id="promotionValue" type="number" min="1" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="promotionStart">Ngày bắt đầu</label>
+                        <input class="form-input" id="promotionStart" type="date" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="promotionEnd">Ngày kết thúc</label>
+                        <input class="form-input" id="promotionEnd" type="date" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="promotionStatus">Trạng thái</label>
+                        <select class="form-select" id="promotionStatus">
+                            <option value="active">Đang chạy</option>
+                            <option value="scheduled">Lên lịch</option>
+                            <option value="ended">Đã kết thúc</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closePromotionForm()" class="btn-secondary">Hủy</button>
+                    <button type="submit" class="btn-primary">Lưu khuyến mãi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../../assets/js/main.js"></script>
+    <script>
+        const statusMap = {
+            active: { label: 'Đang chạy', className: 'badge-success' },
+            scheduled: { label: 'Lên lịch', className: 'badge-info' },
+            ended: { label: 'Đã kết thúc', className: 'badge-dark' }
+        };
+
+        function promotionValueLabel(promotion) {
+            if (promotion.type === 'percent') return `${promotion.value}%`;
+            if (promotion.type === 'fixed') return EleganceApp.formatCurrency(promotion.value);
+            return `${promotion.value} quà tặng`;
+        }
+
+        function renderPromotionTable() {
+            const db = EleganceApp.getDb();
+            document.getElementById('promotionTable').innerHTML = db.promotions.map((promotion) => {
+                const meta = statusMap[promotion.status] || statusMap.ended;
+                return `
+                    <tr>
+                        <td class="font-semibold text-gray-900">${promotion.code}</td>
+                        <td>${promotion.name}</td>
+                        <td>${promotion.type === 'percent' ? 'Phần trăm' : promotion.type === 'fixed' ? 'Số tiền' : 'Quà tặng'}</td>
+                        <td>${promotionValueLabel(promotion)}</td>
+                        <td>${EleganceApp.formatDate(promotion.start)} - ${EleganceApp.formatDate(promotion.end)}</td>
+                        <td><span class="badge ${meta.className}">${meta.label}</span></td>
+                        <td>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="openPromotionForm('${promotion.id}')" class="text-[#a87b51] font-medium">Sửa</button>
+                                <button onclick="deletePromotion('${promotion.id}')" class="text-red-600 font-medium">Xóa</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="7" class="empty-state">Chưa có chương trình khuyến mãi.</td></tr>';
+        }
+
+        function openPromotionForm(promotionId) {
+            const promotion = promotionId ? EleganceApp.getDb().promotions.find((item) => item.id === promotionId) : null;
+            document.getElementById('promotionModalTitle').textContent = promotion ? 'Sửa khuyến mãi' : 'Thêm khuyến mãi';
+            document.getElementById('promotionId').value = promotion?.id || '';
+            document.getElementById('promotionName').value = promotion?.name || '';
+            document.getElementById('promotionCode').value = promotion?.code || '';
+            document.getElementById('promotionType').value = promotion?.type || 'percent';
+            document.getElementById('promotionValue').value = promotion?.value || '';
+            document.getElementById('promotionStart').value = promotion?.start || '';
+            document.getElementById('promotionEnd').value = promotion?.end || '';
+            document.getElementById('promotionStatus').value = promotion?.status || 'scheduled';
+            document.getElementById('promotionModal').classList.remove('hidden');
+            document.getElementById('promotionModal').classList.add('flex');
+        }
+
+        function closePromotionForm() {
+            document.getElementById('promotionModal').classList.add('hidden');
+            document.getElementById('promotionModal').classList.remove('flex');
+        }
+
+        function deletePromotion(promotionId) {
+            if (!confirm('Bạn chắc chắn muốn xóa chương trình khuyến mãi này?')) return;
+            EleganceApp.updateDb((db) => {
+                db.promotions = db.promotions.filter((item) => item.id !== promotionId);
+            });
+            EleganceApp.renderNotice('promotionNotice', 'Đã xóa chương trình khuyến mãi.', 'success');
+            renderPromotionTable();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
+            if (!user) return;
+
+            document.getElementById('promotionForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+                const id = document.getElementById('promotionId').value;
+                const payload = {
+                    name: document.getElementById('promotionName').value.trim(),
+                    code: document.getElementById('promotionCode').value.trim().toUpperCase(),
+                    type: document.getElementById('promotionType').value,
+                    value: Number(document.getElementById('promotionValue').value),
+                    start: document.getElementById('promotionStart').value,
+                    end: document.getElementById('promotionEnd').value,
+                    status: document.getElementById('promotionStatus').value
+                };
+
+                EleganceApp.updateDb((db) => {
+                    if (id) {
+                        const target = db.promotions.find((item) => item.id === id);
+                        Object.assign(target, payload);
+                    } else {
+                        db.promotions.push({
+                            id: `PRM-${String(db.promotions.length + 1).padStart(2, '0')}`,
+                            ...payload
+                        });
+                    }
+                });
+
+                closePromotionForm();
+                EleganceApp.renderNotice('promotionNotice', id ? 'Đã cập nhật khuyến mãi.' : 'Đã thêm khuyến mãi mới.', 'success');
+                renderPromotionTable();
+            });
+
+            renderPromotionTable();
+        });
+    </script>
+</body>
+
+</html>

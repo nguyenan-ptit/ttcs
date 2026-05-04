@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký tài khoản</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+
+<body class="bg-light d-flex align-items-center" style="min-height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card shadow-sm border-0 rounded-3 my-5">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="text-center mb-4">
+                            <h2 class="fw-bold">ĐĂNG KÝ</h2>
+                            <p class="text-muted">Tạo tài khoản khách hàng mới</p>
+                        </div>
+
+                        <form id="registerForm">
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label fw-semibold">Họ và tên</label>
+                                <input type="text" class="form-control" id="fullName" placeholder="VD: Nguyễn Văn A"
+                                    required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="username" class="form-label fw-semibold">Tên đăng nhập</label>
+                                <input type="text" class="form-control" id="username" placeholder="Nhập username"
+                                    required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-semibold">Mật khẩu</label>
+                                <input type="password" class="form-control" id="password" placeholder="Tạo mật khẩu"
+                                    required minlength="6">
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="confirmPassword" class="form-label fw-semibold">Xác nhận mật khẩu</label>
+                                <input type="password" class="form-control" id="confirmPassword"
+                                    placeholder="Nhập lại mật khẩu" required>
+                            </div>
+
+                            <div id="registerError" class="alert alert-danger d-none py-2 text-center" role="alert">
+                                Mật khẩu xác nhận không khớp!
+                            </div>
+
+                            <button type="submit" class="btn btn-dark w-100 py-2 mb-3 fw-bold">ĐĂNG KÝ TÀI
+                                KHOẢN</button>
+                        </form>
+
+                        <div class="text-center">
+                            <span class="text-muted">Đã có tài khoản? </span>
+                            <a href="login.html" class="text-decoration-none text-primary fw-semibold">Đăng nhập
+                                ngay</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function (e) {
+            e.preventDefault(); // Ngăn chặn reload trang
+
+            const fullName = document.getElementById('fullName').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('registerError');
+
+            // Kiểm tra khớp mật khẩu
+            if (password !== confirmPassword) {
+                errorDiv.classList.remove('d-none');
+                errorDiv.textContent = 'Mật khẩu xác nhận không khớp!';
+                return;
+            }
+
+            // Ẩn lỗi nếu dữ liệu hợp lệ
+            errorDiv.classList.add('d-none');
+
+            // Hiển thị thông báo (Mock data)
+            // Trong thực tế, tại đây bạn sẽ dùng fetch() hoặc axios() gọi API POST tới Backend để lưu dữ liệu
+            alert('Đăng ký thành công tài khoản: ' + username + '\nHệ thống sẽ chuyển hướng bạn đến trang Đăng nhập!');
+
+            // Chuyển hướng người dùng sang trang Login
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+
+</html>
