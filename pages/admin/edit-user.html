@@ -122,7 +122,6 @@
                             <select id="role"
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51] cursor-pointer"
                                 required>
-                                <option value="ADMIN">Quản trị viên (Admin)</option>
                                 <option value="MANAGER">Quản lý (Manager)</option>
                                 <option value="SALE">Nhân viên CSKH (Sale)</option>
                                 <option value="WAREHOUSE">Nhân viên Kho (Warehouse)</option>
@@ -135,8 +134,8 @@
                             <select id="status"
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51] cursor-pointer"
                                 required>
-                                <option value="Active">Hoạt động</option>
-                                <option value="Locked">Đã khóa</option>
+                                <option value="active">Hoạt động</option>
+                                <option value="locked">Đã khóa</option>
                             </select>
                         </div>
                     </div>
@@ -156,17 +155,12 @@
 
         </div>
     </main>
-
+    <script src="../../assets/js/api.js"></script>
     <script>
         // Mock data thống nhất với các trang trước
-        const mockUsers = [
-            { id: 1, username: 'admin_thanh', fullName: 'Nguyễn Duy Thành', role: 'ADMIN', status: 'Active' },
-            { id: 2, username: 'manager_lan', fullName: 'Lê Thị Lan', role: 'MANAGER', status: 'Active' },
-            { id: 3, username: 'sale_tuan', fullName: 'Trần Anh Tuấn', role: 'SALE', status: 'Active' },
-            { id: 4, username: 'kho_hieu', fullName: 'Phạm Minh Hiếu', role: 'WAREHOUSE', status: 'Locked' }
-        ];
+        let editingUserId = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded',async () => {
             // Set tên Admin hiển thị
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (currentUser && currentUser.name) {
@@ -179,16 +173,18 @@
 
             // Tìm user tương ứng và điền vào form
             if (userId) {
-                const user = mockUsers.find(u => u.id === userId);
-                if (user) {
-                    document.getElementById('username').value = user.username;
-                    document.getElementById('fullname').value = user.fullName;
-                    document.getElementById('role').value = user.role;
-                    document.getElementById('status').value = user.status;
-                } else {
+                const users = await apiGet('/users');
+                const user = users.find((item) => Number(item.userId) === Number(userId));
+                if (!user) {
                     alert('Không tìm thấy tài khoản!');
                     window.location.href = 'user-list.html';
+                    return;
                 }
+                editingUserId = user.userId;
+                document.getElementById('username').value = user.username;
+                document.getElementById('fullname').value = user.fullName;
+                document.getElementById('role').value = user.role;
+                document.getElementById('status').value = user.status;
             } else {
                 alert('ID tài khoản không hợp lệ!');
                 window.location.href = 'user-list.html';
@@ -196,22 +192,42 @@
         });
 
         // Xử lý sự kiện Submit Form Sửa Tài Khoản
-        function handleEditUser(event) {
+        async function handleEditUser(event) {
             event.preventDefault();
 
             const username = document.getElementById('username').value;
-            const fullname = document.getElementById('fullname').value.trim();
+            const fullName = document.getElementById('fullname').value.trim();
             const role = document.getElementById('role').value;
             const status = document.getElementById('status').value;
             const password = document.getElementById('password').value;
 
-            let successMessage = `Đã cập nhật thành công tài khoản: ${username}\nHọ tên: ${fullname}\nQuyền: ${role}\nTrạng thái: ${status}`;
-            if (password) {
-                successMessage += `\n(Mật khẩu đã được thay đổi)`;
+            if (!fullName || !role || !status) {
+                alert('Vui lòng nhập đầy đủ thông tin.');
+                return;
             }
 
-            alert(successMessage);
-            window.location.href = 'user-list.html';
+            if (password && password.length < 6) {
+                alert('Mật khẩu mới phải có ít nhất 6 ký tự.');
+                return;
+            }
+
+            try {
+                const payload = {
+                    fullName,
+                    role,
+                    isActive: status === 'active'
+                };
+
+                if (password) {
+                    payload.password = password;
+                }
+
+                await apiPut(`/users/${editingUserId}`, payload);
+
+                window.location.href = 'user-list.html';
+            } catch (error) {
+                alert(error.message || 'Không thể cập nhật tài khoản.');
+            }
         }
 
         // Xử lý đăng xuất

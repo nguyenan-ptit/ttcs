@@ -20,17 +20,17 @@
     <aside class="dashboard-sidebar">
         <div class="dashboard-brand">
             <a href="import.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
-            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh kho</div>
+            <div class="dashboard-brand-subtitle">Bảng điều hành kho</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <div class="sidebar-section-title">Menu chính</div>
             <a href="import.html" class="sidebar-link active"><span>Thực hiện nhập kho</span></a>
             <a href="update-stock.html" class="sidebar-link"><span>Cập nhật tồn kho</span></a>
             <a href="return.html" class="sidebar-link"><span>Nhận hàng đổi trả</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
-                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n kho</div>
+                <div class="text-xs uppercase text-white/45">Nhân viên kho</div>
                 <div id="warehouseUserName" class="mt-2 font-semibold">Nhân viên kho</div>
             </div>
             <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
@@ -41,12 +41,11 @@
         <header class="dashboard-header">
             <div>
                 <h1 class="dashboard-header-title">Thực hiện nhập kho</h1>
-                <p class="dashboard-header-copy">Nhân viên kho phải đăng nhập để ghi nhận hàng nhập theo từng biến thể màu và size.</p>
+                <p class="dashboard-header-copy">Nhân viên kho ghi nhận hàng nhập theo từng biến thể màu và size.</p>
             </div>
             <div class="dashboard-header-actions">
-                <a href="update-stock.html" class="btn-secondary">Cập nhật tồn kho</a>
                 <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="warehouseHeaderName">Nh&#226;n vi&#234;n kho</b></span>
+                    <span class="text-sm text-gray-500">Xin chào, <b id="warehouseHeaderName">Nhân viên kho</b></span>
                     <div id="warehouseAvatar" class="dashboard-avatar">K</div>
                 </div>
             </div>
@@ -108,69 +107,126 @@
         </div>
     </main>
 
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
+        let products = [];
+        let receipts = [];
+
         function getCurrentStaffName() {
             return EleganceApp.getCurrentUser()?.name || 'Nhân viên kho';
         }
 
+        function getCurrentUserId() {
+            return EleganceApp.getCurrentUser()?.userId;
+        }
+
+        function findProduct(productId) {
+            return products.find((product) => product.id === productId);
+        }
+
+        function getProductVariants(productId) {
+            return findProduct(productId)?.variants || [];
+        }
+
         function fillVariantSelect(productId) {
-            const variants = EleganceApp.getProductVariants(productId);
+            const variants = getProductVariants(productId).filter((variant) => variant.status !== 'draft');
             const select = document.getElementById('importVariant');
+
             select.innerHTML = variants.map((variant) => `
-                <option value="${variant.id}">${EleganceApp.getVariantLabel(variant)} - tồn hiện tại: ${variant.stock}</option>
+                <option value="${variant.id}">${variant.color} / ${variant.size} - tồn hiện tại: ${variant.stock}</option>
             `).join('');
+
+            if (!variants.length) {
+                select.innerHTML = '<option value="">Sản phẩm chưa có biến thể đang hoạt động</option>';
+            }
+        }
+
+        function fillProductSelect() {
+            const productSelect = document.getElementById('importProduct');
+            const visibleProducts = products.filter((product) => product.status !== 'draft');
+
+            productSelect.innerHTML = visibleProducts.map((product) => `
+                <option value="${product.id}">${product.sku} - ${product.name}</option>
+            `).join('');
+
+            if (!visibleProducts.length) {
+                productSelect.innerHTML = '<option value="">Chưa có sản phẩm đang hoạt động</option>';
+            }
+
+            fillVariantSelect(productSelect.value);
         }
 
         function renderReceipts() {
-            const receipts = EleganceApp.getDb().inventoryReceipts;
-            document.getElementById('importReceiptList').innerHTML = receipts.map((receipt) => `
+            const importLogs = receipts.filter((receipt) => receipt.type === 'IMPORT').slice(0, 8);
+
+            document.getElementById('importReceiptList').innerHTML = importLogs.map((receipt) => `
                 <div class="quick-list-item">
                     <div>
                         <div class="font-semibold text-gray-900">${receipt.id} - ${receipt.productName}</div>
-                        <div class="text-sm text-gray-500 mt-1">${receipt.variantLabel} • ${receipt.quantity} sản phẩm • ${receipt.supplier}</div>
+                        <div class="text-sm text-gray-500 mt-1">${receipt.variantLabel} • ${receipt.quantity} sản phẩm • ${receipt.staff || getCurrentStaffName()}</div>
                     </div>
                     <span class="badge badge-success">${EleganceApp.formatDate(receipt.date)}</span>
                 </div>
             `).join('') || '<div class="empty-state">Chưa có phiếu nhập kho.</div>';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        async function loadInventoryData() {
+            [products, receipts] = await Promise.all([
+                apiGet('/inventory/products'),
+                apiGet('/inventory/logs')
+            ]);
+
+            fillProductSelect();
+            renderReceipts();
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['WAREHOUSE'], '../auth/login.html');
             if (!user) return;
+
             document.getElementById('warehouseUserName').textContent = user.name;
             EleganceApp.hydrateUser('warehouseHeaderName', 'warehouseAvatar', user.name);
+            document.getElementById('importDate').value = new Date().toISOString().slice(0, 10);
 
             const productSelect = document.getElementById('importProduct');
-            const products = EleganceApp.getDb().products;
-            productSelect.innerHTML = products.map((product) => `
-                <option value="${product.id}">${product.sku} - ${product.name}</option>
-            `).join('');
-            document.getElementById('importDate').value = new Date().toISOString().slice(0, 10);
-            fillVariantSelect(productSelect.value);
-            renderReceipts();
-
             productSelect.addEventListener('change', () => fillVariantSelect(productSelect.value));
 
-            document.getElementById('importForm').addEventListener('submit', (event) => {
+            document.getElementById('importForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
+
+                const variantId = document.getElementById('importVariant').value;
+                const quantity = document.getElementById('importUnits').value.trim();
+
+                if (!variantId) {
+                    EleganceApp.renderNotice('importNotice', 'Vui lòng chọn biến thể cần nhập kho.', 'error');
+                    return;
+                }
+
+                if (!/^[1-9]\d*$/.test(quantity)) {
+                    EleganceApp.renderNotice('importNotice', 'Số lượng nhập phải là số nguyên lớn hơn 0.', 'error');
+                    return;
+                }
+
                 try {
-                    const receipt = EleganceApp.createInventoryReceipt({
-                        variantId: document.getElementById('importVariant').value,
-                        supplier: document.getElementById('importSupplier').value,
-                        quantity: document.getElementById('importUnits').value,
-                        unitCost: document.getElementById('importCost').value,
-                        note: document.getElementById('importNote').value,
-                        receivedDate: document.getElementById('importDate').value,
-                        staff: getCurrentStaffName()
+                    const receipt = await apiPost('/inventory/imports', {
+                        variantId,
+                        quantity: Number(quantity),
+                        userId: getCurrentUserId()
                     });
+
                     EleganceApp.renderNotice('importNotice', `Đã ghi nhận phiếu ${receipt.id} và cập nhật tồn kho.`, 'success');
-                    fillVariantSelect(productSelect.value);
-                    renderReceipts();
+                    await loadInventoryData();
                 } catch (error) {
                     EleganceApp.renderNotice('importNotice', error.message, 'error');
                 }
             });
+
+            try {
+                await loadInventoryData();
+            } catch (error) {
+                EleganceApp.renderNotice('importNotice', error.message || 'Không tải được dữ liệu tồn kho.', 'error');
+            }
         });
     </script>
 </body>

@@ -3,6 +3,32 @@
 let currentProduct = null;
 let currentVariants = [];
 
+const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=600&auto=format&fit=crop';
+const AO_DAI_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=600&auto=format&fit=crop';
+
+function getFallbackProductImage(product) {
+    const normalizedName = EleganceApp.normalizeText(product?.name || '');
+    if (normalizedName.includes('ao dai')) {
+        return AO_DAI_FALLBACK_IMAGE;
+    }
+    return DEFAULT_PRODUCT_IMAGE;
+}
+
+function resolveProductImage(product) {
+    const image = String(product?.image || '').trim();
+    return image || getFallbackProductImage(product);
+}
+
+function attachImageFallback(imageElement, product) {
+    if (!imageElement) return;
+    imageElement.addEventListener('error', () => {
+        const fallback = getFallbackProductImage(product);
+        if (imageElement.src !== fallback) {
+            imageElement.src = fallback;
+        }
+    }, { once: true });
+}
+
 const PRODUCT_DESCRIPTIONS = {
     'PRD-001': 'Chất liệu cotton cao cấp, thoáng mát và thấm hút mồ hôi tốt. Dáng áo ôm vừa vặn mang lại vẻ ngoài thanh lịch, chuyên nghiệp chốn công sở.',
     'PRD-002': 'Quần jean form slim hiện đại, chất denim co giãn nhẹ giúp dễ vận động nhưng vẫn giữ phom gọn gàng cho trang phục hằng ngày.',
@@ -86,15 +112,10 @@ const PRODUCT_REVIEWS = {
     }
 };
 
-function resolveProductFromUrl() {
+async function resolveProductFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    const rawId = params.get('id') || '1';
-    const products = EleganceApp.getDb().products;
-
-    return products.find((product) => product.id === rawId) ||
-        products.find((product) => product.id === `PRD-${String(rawId).padStart(3, '0')}`) ||
-        products[Number(rawId) - 1] ||
-        products[0];
+    const rawId = params.get('id');
+    return await apiGet(`/products/public/${rawId}`);
 }
 
 function renderStars(rating) {
@@ -103,7 +124,7 @@ function renderStars(rating) {
 }
 
 function getCategoryName(product) {
-    return EleganceApp.findCategoryById(product.categoryId)?.name || 'Sản phẩm';
+    return product.categoryName || 'Sản phẩm';
 }
 
 function uniqueValues(items, key) {
@@ -166,9 +187,14 @@ function renderSizeOptions() {
     });
 }
 
-function renderProductDetail() {
-    currentProduct = resolveProductFromUrl();
-    currentVariants = EleganceApp.getProductVariants(currentProduct.id);
+async function renderProductDetail() {
+    try {
+        currentProduct = await resolveProductFromUrl();
+        currentVariants = currentProduct.variants || [];
+    } catch (error) {
+        alert('Không tải được thông tin sản phẩm từ API.');
+        return;
+    }
     const categoryName = getCategoryName(currentProduct);
 
     document.title = `${currentProduct.name} - Élégance`;
@@ -180,13 +206,16 @@ function renderProductDetail() {
     document.getElementById('productDescription').textContent =
         PRODUCT_DESCRIPTIONS[currentProduct.id] || 'Sản phẩm được chọn lọc cho phong cách thanh lịch, dễ phối và phù hợp sử dụng hằng ngày.';
 
+    const imageUrl = resolveProductImage(currentProduct);
     const mainImage = document.getElementById('productMainImage');
-    mainImage.src = currentProduct.image;
+    mainImage.src = imageUrl;
     mainImage.alt = currentProduct.name;
+    attachImageFallback(mainImage, currentProduct);
     document.getElementById('productThumbs').innerHTML = `
-        <img src="${currentProduct.image}" alt="${currentProduct.name}"
+        <img src="${imageUrl}" alt="${currentProduct.name}"
             class="rounded-xl border-2 border-[#a87b51] cursor-pointer">
     `;
+    attachImageFallback(document.querySelector('#productThumbs img'), currentProduct);
 
     if (currentVariants.length) {
         renderColorOptions();
@@ -327,7 +356,7 @@ function addToCart() {
         color: selectedColor,
         size: selectedSize,
         quantity,
-        image: currentProduct.image
+        image: resolveProductImage(currentProduct)
     };
 
     const cart = JSON.parse(localStorage.getItem('elegance_cart')) || [];

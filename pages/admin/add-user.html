@@ -97,7 +97,7 @@
                                     class="text-red-500">*</span></label>
                             <input type="text" id="username"
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
-                                placeholder="VD: sale_ngoc" required>
+                                placeholder="VD: sale_ngoc" >
                         </div>
 
                         <div>
@@ -105,7 +105,7 @@
                                     class="text-red-500">*</span></label>
                             <input type="password" id="password"
                                 class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
-                                placeholder="Nhập mật khẩu" required minlength="6">
+                                placeholder="Nhập mật khẩu" >
                         </div>
                     </div>
 
@@ -114,15 +114,14 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="fullname"
                             class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
-                            placeholder="Nhập họ và tên đầy đủ" required>
+                            placeholder="Nhập họ và tên đầy đủ" >
                     </div>
 
                     <div class="mb-8">
                         <label class="block text-sm font-semibold mb-2 text-gray-700">Phân quyền (Role) <span
                                 class="text-red-500">*</span></label>
                         <select id="role"
-                            class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51] cursor-pointer"
-                            required>
+                            class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51] cursor-pointer">
                             <option value="" disabled selected>-- Chọn quyền cho nhân viên --</option>
                             <option value="MANAGER">Quản lý (Manager)</option>
                             <option value="SALE">Nhân viên CSKH (Sale)</option>
@@ -131,7 +130,7 @@
                         <p class="text-xs text-gray-500 mt-2 italic">* Lưu ý: Không thể cấp quyền System Admin cho tài
                             khoản mới từ giao diện này.</p>
                     </div>
-
+                    <div id="formMessage" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
                     <div class="flex justify-end gap-4 border-t pt-6">
                         <a href="user-list.html"
                             class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
@@ -147,7 +146,7 @@
 
         </div>
     </main>
-
+    <script src="../../assets/js/api.js"></script>
     <script>
         // Set tên Admin hiển thị trên header
         document.addEventListener('DOMContentLoaded', () => {
@@ -156,21 +155,44 @@
                 document.getElementById('adminNameDisplay').innerText = currentUser.name;
             }
         });
+        function showFormMessage(message, type = 'error') {
+            const target = document.getElementById('formMessage');
 
+            target.textContent = message;
+            target.className = type === 'success'
+                ? 'rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700'
+                : 'rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700';
+
+            target.classList.remove('hidden');
+        }
         // Xử lý sự kiện Submit Form Thêm Tài Khoản
-        function handleAddUser(event) {
-            event.preventDefault(); // Ngăn chặn reload trang
-
+        async function handleAddUser(event) {
+            event.preventDefault();
             const username = document.getElementById('username').value.trim();
-            const fullname = document.getElementById('fullname').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const fullName = document.getElementById('fullname').value.trim();
             const role = document.getElementById('role').value;
+            if (!username || !password || !fullName || !role) {
+                showFormMessage('Vui lòng nhập đầy đủ thông tin.');
+                return;
+            }
+            if (password.length < 6) {
+                showFormMessage('Mật khẩu phải có ít nhất 6 ký tự.');
+                return;
+            }
+            try {
+                await apiPost('/users', {
+                username,
+                password,
+                fullName,
+                role,
+                isActive: true
+            });
 
-            // Ở đây trong thực tế sẽ gọi API POST lên backend. 
-            // Hiện tại ta dùng alert để mock data.
-            alert(`Đã thêm thành công!\n\nTài khoản: ${username}\nHọ tên: ${fullname}\nQuyền: ${role}`);
-
-            // Chuyển hướng về lại trang danh sách tài khoản
-            window.location.href = 'user-list.html';
+                window.location.href = 'user-list.html';
+            } catch (error) {
+                showFormMessage(error.message || 'Không thể thêm tài khoản.');
+            }
         }
 
         // Xử lý đăng xuất

@@ -111,7 +111,7 @@
             <p>© 2026 ÉLÉGANCE. Bản quyền thuộc về Hệ thống Cửa hàng Thời trang.</p>
         </div>
     </footer>
-
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
         function showMessage(targetId, message, type) {
@@ -125,26 +125,46 @@
             target.classList.remove('hidden');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['CUSTOMER'], '../auth/login.html');
             if (!user) return;
 
-            const profile = EleganceApp.getCustomerProfile(user);
-            document.getElementById('profileName').value = profile.name || user.name || '';
-            document.getElementById('profilePhone').value = profile.phone || '';
-            document.getElementById('profileAddress').value = profile.address || '';
+            if (!user.userId) {
+                showMessage('profileMessage', 'Tai khoan hien tai chua co userId. Hay dang xuat va dang nhap lai.', 'error');
+                return;
+            }
 
-            document.getElementById('profileForm').addEventListener('submit', (event) => {
+            try {
+                const profile = await apiGet(`/users/${user.userId}/profile`);
+
+                document.getElementById('profileName').value = profile.fullName || user.name || '';
+                document.getElementById('profilePhone').value = profile.address?.receiverPhone || '';
+                document.getElementById('profileAddress').value = profile.address?.addressDetail || '';
+            } catch (error) {
+                showMessage('profileMessage', 'Không tải được thông tin tài khoản.', 'error');
+            }
+
+            document.getElementById('profileForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 try {
-                    EleganceApp.updateCustomerProfile({
-                        user: EleganceApp.getCurrentUser(),
-                        name: document.getElementById('profileName').value,
-                        phone: document.getElementById('profilePhone').value,
-                        address: document.getElementById('profileAddress').value
+                    const fullName = document.getElementById('profileName').value.trim();
+                    const phone = document.getElementById('profilePhone').value.trim();
+                    const address = document.getElementById('profileAddress').value.trim();
+
+                    await apiPut(`/users/${user.userId}/profile`, {
+                        fullName,
+                        phone,
+                        address
                     });
-                    showMessage('profileMessage', 'Đã lưu thông tin tài khoản. Checkout sẽ dùng thông tin mới này.', 'success');
-                    setTimeout(() => window.location.reload(), 700);
+
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        ...user,
+                        name: fullName,
+                        phone,
+                        address
+                    }));
+
+                    showMessage('profileMessage', 'Đã lưu thông tin tài khoản.', 'success');
                 } catch (error) {
                     showMessage('profileMessage', error.message || 'Không thể lưu thông tin.', 'error');
                 }

@@ -119,16 +119,14 @@
 
         </div>
     </main>
-
+    <script src="../../assets/js/api.js"></script>
     <script>
         // Mock data tương ứng với DB của bạn
-        let mockUsers = [
-            { id: 1, username: 'admin_thanh', fullName: 'Nguyễn Duy Thành', role: 'ADMIN', status: 'Active' },
-            { id: 2, username: 'manager_lan', fullName: 'Lê Thị Lan', role: 'MANAGER', status: 'Active' },
-            { id: 3, username: 'sale_tuan', fullName: 'Trần Anh Tuấn', role: 'SALE', status: 'Active' },
-            { id: 4, username: 'kho_hieu', fullName: 'Phạm Minh Hiếu', role: 'WAREHOUSE', status: 'Locked' }
-        ];
-
+        let users = [];
+        async function loadUsers() {
+            users = await apiGet('/users?type=staff');
+            renderTable(users);
+        }
         // Format huy hiệu (badge) Role
         function getRoleBadge(role) {
             const styles = {
@@ -146,7 +144,7 @@
             tbody.innerHTML = '';
 
             data.forEach((user, index) => {
-                const statusBadge = user.status === 'Active'
+                const statusBadge = user.status === 'active'
                     ? `<span class="text-green-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-green-500"></div> Hoạt động</span>`
                     : `<span class="text-red-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div> Đã khóa</span>`;
 
@@ -158,9 +156,9 @@
                         <td class="px-6 py-4">${getRoleBadge(user.role)}</td>
                         <td class="px-6 py-4 font-medium text-sm">${statusBadge}</td>
                         <td class="px-6 py-4 text-right space-x-3 text-sm">
-                            <a href="edit-user.html?id=${user.id}" class="text-blue-500 hover:text-blue-700 font-medium">Sửa</a>
-                            <button onclick="confirmAction(${user.id}, '${user.status}')" class="text-red-500 hover:text-red-700 font-medium">
-                                ${user.status === 'Active' ? 'Khóa' : 'Mở khóa'}
+                            <a href="edit-user.html?id=${user.userId}" class="text-blue-500 hover:text-blue-700 font-medium">Sửa</a>
+                            <button onclick="confirmAction(${user.userId}, '${user.status}')" class="text-red-500 hover:text-red-700 font-medium">
+                                ${user.status === 'active' ? 'Khóa' : 'Mở khóa'}
                             </button>
                         </td>
                     </tr>
@@ -169,20 +167,28 @@
         }
 
         // Xử lý nút Khóa/Mở Khóa
-        function confirmAction(id, currentStatus) {
-            const actionText = currentStatus === 'Active' ? 'khóa' : 'mở khóa';
-            if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này không?`)) {
-                // Logic mock: Đảo ngược trạng thái
-                const userIndex = mockUsers.findIndex(u => u.id === id);
-                mockUsers[userIndex].status = currentStatus === 'Active' ? 'Locked' : 'Active';
-                renderTable(mockUsers);
+        async function confirmAction(id, currentStatus) {
+            const nextIsActive = currentStatus !== 'active';
+            const actionText = currentStatus === 'active' ? 'khóa' : 'mở khóa';
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này không?`)) {
+                return;
+            }
+            try {
+                await apiPatch(`/users/${id}/status`, {
+                    isActive: nextIsActive
+                });
+                await loadUsers();
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Không thể cập nhật trạng thái tài khoản');
             }
         }
+
 
         // Xử lý tìm kiếm
         document.getElementById('searchInput').addEventListener('input', function (e) {
             const keyword = e.target.value.toLowerCase();
-            const filtered = mockUsers.filter(u => u.username.toLowerCase().includes(keyword));
+            const filtered = users.filter(u => u.username.toLowerCase().includes(keyword));
             renderTable(filtered);
         });
 
@@ -198,7 +204,7 @@
             if (currentUser && currentUser.name) {
                 document.getElementById('adminNameDisplay').innerText = currentUser.name;
             }
-            renderTable(mockUsers);
+            loadUsers();
         });
     </script>
 </body>

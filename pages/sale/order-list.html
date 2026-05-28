@@ -20,17 +20,17 @@
     <aside class="dashboard-sidebar">
         <div class="dashboard-brand">
             <a href="order-list.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
-            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh b&#225;n h&#224;ng</div>
+            <div class="dashboard-brand-subtitle">Bảng điều hành bán hàng</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <div class="sidebar-section-title">Menu chính</div>
             <a href="order-list.html" class="sidebar-link active"><span>Quản lý đơn hàng</span></a>
             <a href="return.html" class="sidebar-link"><span>Xử lý đổi trả</span></a>
             <a href="feedback.html" class="sidebar-link"><span>Phản hồi đánh giá</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
-                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</div>
+                <div class="text-xs uppercase text-white/45">Nhân viên bán hàng</div>
                 <div id="saleUserName" class="mt-2 font-semibold">Nhân viên sale</div>
             </div>
             <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
@@ -41,12 +41,12 @@
         <header class="dashboard-header">
             <div>
                 <h1 class="dashboard-header-title">Quản lý đơn hàng</h1>
-                <p class="dashboard-header-copy">Chỉ hiển thị các đơn hàng đang ở trạng thái Chờ xác nhận.</p>
+                <p class="dashboard-header-copy">Hiển thị các đơn hàng chờ xác nhận kèm thông tin liên hệ và giao hàng.</p>
             </div>
             <div class="dashboard-header-actions">
                 <a href="return.html" class="btn-secondary">Xử lý đổi trả</a>
                 <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="saleHeaderName">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</b></span>
+                    <span class="text-sm text-gray-500">Xin chào, <b id="saleHeaderName">Nhân viên bán hàng</b></span>
                     <div id="saleAvatar" class="dashboard-avatar">S</div>
                 </div>
             </div>
@@ -58,7 +58,7 @@
                     <div class="toolbar">
                         <div class="toolbar-group flex-1">
                             <input id="orderKeyword" class="form-input max-w-md" type="text"
-                                placeholder="Tìm mã đơn hoặc tên khách hàng">
+                                placeholder="Tìm mã đơn, tên khách, số điện thoại hoặc địa chỉ">
                         </div>
                         <div class="text-sm text-gray-500">Nhấn vào mã đơn để xem chi tiết và xử lý.</div>
                     </div>
@@ -68,6 +68,8 @@
                                 <tr>
                                     <th>Mã đơn</th>
                                     <th>Khách hàng</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Địa chỉ giao hàng</th>
                                     <th>Ngày tạo</th>
                                     <th>Kênh</th>
                                     <th>Tổng tiền</th>
@@ -81,7 +83,7 @@
             </section>
         </div>
     </main>
-
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
         function renderOrderTable(data) {
@@ -90,36 +92,62 @@
                 return `
                     <tr>
                         <td><a href="order-detail.html?id=${order.id}" class="font-semibold text-[#a87b51] hover:text-[#8b633f]">${order.id}</a></td>
-                        <td>${order.customerName}</td>
+                        <td>${order.customerName || '--'}</td>
+                        <td>${order.phone || '--'}</td>
+                        <td class="max-w-[280px] whitespace-normal break-words">${order.address || '--'}</td>
                         <td>${EleganceApp.formatDate(order.date)}</td>
-                        <td>${order.channel}</td>
-                        <td>${EleganceApp.formatCurrency(EleganceApp.getOrderTotal(order))}</td>
+                        <td>${order.channel || '--'}</td>
+                        <td>${EleganceApp.formatCurrency(Number(order.totalAmount || 0))}</td>
                         <td><span class="badge ${meta.className}">${meta.label}</span></td>
                     </tr>
                 `;
-            }).join('') || '<tr><td colspan="6" class="empty-state">Không có đơn hàng chờ xác nhận.</td></tr>';
+            }).join('') || '<tr><td colspan="8" class="empty-state">Không có đơn hàng.</td></tr>';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const user = EleganceApp.ensureRole(['SALE'], '../auth/login.html');
             if (!user) return;
+
             document.getElementById('saleUserName').textContent = user.name;
             EleganceApp.hydrateUser('saleHeaderName', 'saleAvatar', user.name);
 
-            const applyFilter = () => {
+            let allOrders = [];
+
+           const applyFilter = () => {
                 const keyword = EleganceApp.normalizeText(document.getElementById('orderKeyword').value);
-                const orders = EleganceApp.getDb().orders.filter((order) => {
-                    const pending = order.status === 'new';
+                const orders = allOrders.filter((order) => {
+                    const visibleStatus = [
+                        'PENDING',
+                        'CONFIRMED',
+                        'SHIPPING',
+                        'DELIVERED',
+                        'DELIVERY_FAILED',
+                        'CANCELLED'
+                    ].includes(order.status);
                     const matchKeyword = !keyword ||
                         EleganceApp.normalizeText(order.id).includes(keyword) ||
-                        EleganceApp.normalizeText(order.customerName).includes(keyword);
-                    return pending && matchKeyword;
+                        EleganceApp.normalizeText(order.customerName).includes(keyword) ||
+                        EleganceApp.normalizeText(order.phone).includes(keyword) ||
+                        EleganceApp.normalizeText(order.address).includes(keyword);
+
+                    return visibleStatus && matchKeyword;
                 });
+
                 renderOrderTable(orders);
+           };
+
+            const loadOrders = async () => {
+                try {
+                    allOrders = await apiGet('/orders');
+                    applyFilter();
+                } catch (error) {
+                    document.getElementById('saleOrderTable').innerHTML =
+                    '<tr><td colspan="8" class="empty-state">Không tải được danh sách đơn hàng từ backend.</td></tr>';
+                }
             };
 
             document.getElementById('orderKeyword').addEventListener('input', applyFilter);
-            applyFilter();
+            loadOrders();
         });
     </script>
 </body>

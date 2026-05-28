@@ -91,6 +91,9 @@
                             <p id="orderNoteText" class="mt-4 text-sm text-gray-600 leading-relaxed">Không có ghi chú bổ sung.</p>
                             <div id="orderActions" class="mt-6 flex flex-col sm:flex-row gap-3">
                                 <button id="confirmOrderButton" class="btn-primary flex-1" type="button">Xác nhận đơn</button>
+                                <button id="startShippingButton" class="btn-primary flex-1" type="button">Bắt đầu giao</button>
+                                <button id="completeDeliveryButton" class="btn-secondary flex-1" type="button">Giao thành công</button>
+                                <button id="failDeliveryButton" class="btn-danger flex-1" type="button">Giao thất bại</button>
                                 <button id="openCancelModalButton" class="btn-danger flex-1" type="button">Hủy đơn</button>
                             </div>
                         </div>
@@ -132,10 +135,11 @@
             </form>
         </div>
     </div>
-
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
         let currentOrderId = null;
+        let currentOrder = null;
 
         function setModalVisible(visible) {
             const modal = document.getElementById('cancelModal');
@@ -145,6 +149,9 @@
 
         function renderOrder(order) {
             const statusMeta = EleganceApp.orderStatusMeta(order.status);
+            const reasonText = ['CANCELLED', 'DELIVERY_FAILED'].includes(order.status)
+            ? (order.cancelReason || order.deliveryFailReason || order.note || '')
+            : '';
             document.getElementById('orderDetailTitle').textContent = order.id;
             document.getElementById('orderItemsTable').innerHTML = order.items.map((item) => `
                 <tr>
@@ -164,51 +171,123 @@
                 <div class="quick-list-item"><span>Kênh</span><b>${order.channel}</b></div>
                 <div class="quick-list-item"><span>Thanh toán</span><b>${order.payment}</b></div>
                 <div class="quick-list-item"><span>Trạng thái</span><span class="badge ${statusMeta.className}">${statusMeta.label}</span></div>
+                ${reasonText ? `<div class="quick-list-item"><span>Lý do</span><b>${reasonText}</b></div>` : ''}
                 <div class="quick-list-item"><span>Tổng tiền</span><b>${EleganceApp.formatCurrency(EleganceApp.getOrderTotal(order))}</b></div>
             `;
 
             document.getElementById('orderNoteText').textContent = order.note || 'Không có ghi chú bổ sung.';
-            const canProcess = order.status === 'new';
-            document.getElementById('confirmOrderButton').disabled = !canProcess;
-            document.getElementById('openCancelModalButton').disabled = !canProcess;
-            document.getElementById('orderActions').classList.toggle('opacity-50', !canProcess);
+            const canConfirm = order.status === 'PENDING';
+            const canCancel = order.status === 'PENDING';
+            const canStartShipping = order.status === 'CONFIRMED';
+            const canCompleteDelivery = order.status === 'SHIPPING';
+            const canFailDelivery = order.status === 'SHIPPING';
+
+            const confirmOrderButton = document.getElementById('confirmOrderButton');
+            const startShippingButton = document.getElementById('startShippingButton');
+            const completeDeliveryButton = document.getElementById('completeDeliveryButton');
+            const failDeliveryButton = document.getElementById('failDeliveryButton');
+            const openCancelModalButton = document.getElementById('openCancelModalButton');
+
+            confirmOrderButton.disabled = !canConfirm;
+            confirmOrderButton.classList.toggle('hidden', !canConfirm);
+            openCancelModalButton.disabled = !canCancel;
+            openCancelModalButton.classList.toggle('hidden', !canCancel);
+            startShippingButton.disabled = !canStartShipping;
+            startShippingButton.classList.toggle('hidden', !canStartShipping);
+            completeDeliveryButton.disabled = !canCompleteDelivery;
+            completeDeliveryButton.classList.toggle('hidden', !canCompleteDelivery);
+            failDeliveryButton.disabled = !canFailDelivery;
+            failDeliveryButton.classList.toggle('hidden', !canFailDelivery);
+
+            document.getElementById('orderActions').classList.toggle(
+                'opacity-50',
+                !canConfirm && !canCancel && !canStartShipping && !canCompleteDelivery && !canFailDelivery
+            );
         }
 
         function getCurrentOrder() {
-            return EleganceApp.getDb().orders.find((item) => item.id === currentOrderId);
+            return currentOrder;
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['SALE'], '../auth/login.html');
             if (!user) return;
             document.getElementById('saleUserName').textContent = user.name;
             EleganceApp.hydrateUser('saleHeaderName', 'saleAvatar', user.name);
 
-            currentOrderId = new URLSearchParams(window.location.search).get('id') || EleganceApp.getDb().orders[0]?.id;
-            const order = getCurrentOrder();
-            if (!order) {
-                EleganceApp.renderNotice('orderNotice', 'Không tìm thấy đơn hàng.', 'error');
+            currentOrderId = new URLSearchParams(window.location.search).get('id');
+
+            if (!currentOrderId) {
+                EleganceApp.renderNotice('orderNotice', 'Không tìm thấy mã đơn hàng.', 'error');
                 return;
             }
-            renderOrder(order);
 
-            document.getElementById('confirmOrderButton').addEventListener('click', () => {
-                EleganceApp.updateDb((db) => {
-                    const target = db.orders.find((item) => item.id === currentOrderId);
-                    if (target && target.status === 'new') {
-                        target.status = 'preparing';
-                        target.note = 'Nhân viên bán hàng đã xác nhận đơn.';
-                    }
-                });
-                EleganceApp.renderNotice('orderNotice', 'Đã xác nhận đơn. Trạng thái chuyển sang Đang chuẩn bị hàng.', 'success');
-                renderOrder(getCurrentOrder());
+            try {
+                currentOrder = await apiGet(`/orders/${currentOrderId}`);
+                renderOrder(currentOrder);
+            } catch (error) {
+                EleganceApp.renderNotice('orderNotice', 'Không tải được chi tiết đơn hàng từ backend.', 'error');
+                return;
+            }
+
+            document.getElementById('confirmOrderButton').addEventListener('click', async () => {
+                try {
+                    await apiPatch(`/orders/${currentOrderId}/status`, {
+                        status: 'CONFIRMED',
+                    });
+
+                    currentOrder = await apiGet(`/orders/${currentOrderId}`);
+                    EleganceApp.renderNotice('orderNotice', 'Đã xác nhận đơn.', 'success');
+                    renderOrder(currentOrder);
+                } catch (error) {
+                    EleganceApp.renderNotice('orderNotice', 'Không thể xác nhận đơn hàng.', 'error');
+                }
+            });
+            document.getElementById('startShippingButton').addEventListener('click', async () => {
+                try {
+                    await apiPatch(`/orders/${currentOrderId}/status`, {
+                        status: 'SHIPPING'
+                    });
+
+                    currentOrder = await apiGet(`/orders/${currentOrderId}`);
+                    EleganceApp.renderNotice('orderNotice', 'Đơn hàng đã chuyển sang Đang giao.', 'success');
+                    renderOrder(currentOrder);
+                } catch (error) {
+                    EleganceApp.renderNotice('orderNotice', 'Không thể chuyển đơn sang Đang giao.', 'error');
+                }
+            });
+            document.getElementById('completeDeliveryButton').addEventListener('click', async () => {
+                try {
+                    await apiPatch(`/orders/${currentOrderId}/status`, {
+                        status: 'DELIVERED'
+                    });
+
+                currentOrder = await apiGet(`/orders/${currentOrderId}`);
+                EleganceApp.renderNotice('orderNotice', 'Đã cập nhật đơn thành Giao thành công.', 'success');
+                renderOrder(currentOrder);
+                } catch (error) {
+                    EleganceApp.renderNotice('orderNotice', 'Không thể cập nhật trạng thái giao thành công.', 'error');
+                }
             });
 
+            document.getElementById('failDeliveryButton').addEventListener('click', async () => {
+                try {
+                    await apiPatch(`/orders/${currentOrderId}/status`, {
+                        status: 'DELIVERY_FAILED'
+                    });
+
+                    currentOrder = await apiGet(`/orders/${currentOrderId}`);
+                    EleganceApp.renderNotice('orderNotice', 'Đã cập nhật đơn thành Giao thất bại.', 'error');
+                    renderOrder(currentOrder);
+                } catch (error) {
+                    EleganceApp.renderNotice('orderNotice', 'Không thể cập nhật trạng thái giao thất bại.', 'error');
+                }
+            });
             document.getElementById('openCancelModalButton').addEventListener('click', () => setModalVisible(true));
             document.getElementById('closeCancelModalButton').addEventListener('click', () => setModalVisible(false));
             document.getElementById('cancelModalBackButton').addEventListener('click', () => setModalVisible(false));
 
-            document.getElementById('cancelOrderForm').addEventListener('submit', (event) => {
+            document.getElementById('cancelOrderForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const reason = document.getElementById('cancelReason').value;
                 const note = document.getElementById('cancelNote').value.trim();
@@ -216,17 +295,18 @@
                     EleganceApp.renderNotice('cancelModalNotice', 'Vui lòng chọn lý do hủy đơn.', 'error');
                     return;
                 }
-                EleganceApp.updateDb((db) => {
-                    const target = db.orders.find((item) => item.id === currentOrderId);
-                    if (target && target.status === 'new') {
-                        target.status = 'cancelled';
-                        target.cancelReason = reason;
-                        target.note = note ? `${reason}. ${note}` : reason;
-                    }
-                });
-                setModalVisible(false);
-                EleganceApp.renderNotice('orderNotice', 'Đã hủy đơn hàng.', 'success');
-                renderOrder(getCurrentOrder());
+                try {
+                    await apiPatch(`/orders/${currentOrderId}/status`, {
+                        status: 'CANCELLED'
+                    });
+
+                    currentOrder = await apiGet(`/orders/${currentOrderId}`);
+                    setModalVisible(false);
+                    EleganceApp.renderNotice('orderNotice', 'Đã hủy đơn hàng.', 'success');
+                    renderOrder(currentOrder);
+                } catch (error) {
+                    EleganceApp.renderNotice('cancelModalNotice', 'Không thể hủy đơn hàng.', 'error');
+                }
             });
         });
     </script>

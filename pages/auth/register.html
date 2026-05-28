@@ -24,25 +24,25 @@
                             <div class="mb-3">
                                 <label for="fullName" class="form-label fw-semibold">Họ và tên</label>
                                 <input type="text" class="form-control" id="fullName" placeholder="VD: Nguyễn Văn A"
-                                    required>
+                                    >
                             </div>
 
                             <div class="mb-3">
                                 <label for="username" class="form-label fw-semibold">Tên đăng nhập</label>
                                 <input type="text" class="form-control" id="username" placeholder="Nhập username"
-                                    required>
+                                    >
                             </div>
 
                             <div class="mb-3">
                                 <label for="password" class="form-label fw-semibold">Mật khẩu</label>
                                 <input type="password" class="form-control" id="password" placeholder="Tạo mật khẩu"
-                                    required minlength="6">
+                                    >
                             </div>
 
                             <div class="mb-4">
                                 <label for="confirmPassword" class="form-label fw-semibold">Xác nhận mật khẩu</label>
                                 <input type="password" class="form-control" id="confirmPassword"
-                                    placeholder="Nhập lại mật khẩu" required>
+                                    placeholder="Nhập lại mật khẩu" >
                             </div>
 
                             <div id="registerError" class="alert alert-danger d-none py-2 text-center" role="alert">
@@ -63,35 +63,7 @@
             </div>
         </div>
     </div>
-
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', function (e) {
-            e.preventDefault(); // Ngăn chặn reload trang
-
-            const fullName = document.getElementById('fullName').value.trim();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const errorDiv = document.getElementById('registerError');
-
-            // Kiểm tra khớp mật khẩu
-            if (password !== confirmPassword) {
-                errorDiv.classList.remove('d-none');
-                errorDiv.textContent = 'Mật khẩu xác nhận không khớp!';
-                return;
-            }
-
-            // Ẩn lỗi nếu dữ liệu hợp lệ
-            errorDiv.classList.add('d-none');
-
-            // Hiển thị thông báo (Mock data)
-            // Trong thực tế, tại đây bạn sẽ dùng fetch() hoặc axios() gọi API POST tới Backend để lưu dữ liệu
-            alert('Đăng ký thành công tài khoản: ' + username + '\nHệ thống sẽ chuyển hướng bạn đến trang Đăng nhập!');
-
-            // Chuyển hướng người dùng sang trang Login
-            window.location.href = 'login.html';
-        });
-    </script>
+    <script src="../../assets/js/register.js"></script>
 </body>
 
 </html>

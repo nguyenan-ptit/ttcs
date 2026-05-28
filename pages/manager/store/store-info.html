@@ -23,14 +23,13 @@
             <a href="../category/category-list.html" class="sidebar-link"><span>Quản lý danh mục</span></a>
             <a href="../product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
             <a href="../promotion/promotion-list.html" class="sidebar-link"><span>Quản lý khuyến mãi</span></a>
-            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
                 <div class="text-xs uppercase text-white/45">Quản lý</div>
-                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Quản lý</div>
             </div>
-            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+            <button onclick="EleganceApp.logout('../../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
         </div>
     </aside>
 
@@ -122,9 +121,10 @@
             </div>
         </div>
     </main>
-
+    <script src="../../../assets/js/api.js"></script>
     <script src="../../../assets/js/main.js"></script>
     <script>
+
         function bindPreview() {
             const name = document.getElementById('storeName').value;
             const address = document.getElementById('storeAddress').value;
@@ -139,11 +139,7 @@
             `;
             document.getElementById('storePolicyPreview').textContent = policy || 'Chưa nhập chính sách.';
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
-            if (!user) return;
-            const store = EleganceApp.getDb().storeInfo;
+        function fillStoreForm(store) {
             Object.entries({
                 storeName: store.name,
                 storeManager: store.manager,
@@ -155,31 +151,64 @@
                 storeFacebook: store.facebook,
                 storeInstagram: store.instagram,
                 storeDescription: store.description,
-                storePolicy: store.policy || 'Đổi size trong 7 ngày cho sản phẩm còn tem. Miễn phí vận chuyển cho đơn hàng từ 500.000đ.'
+                storePolicy: store.policy
             }).forEach(([id, value]) => {
                 document.getElementById(id).value = value || '';
                 document.getElementById(id).addEventListener('input', bindPreview);
             });
-            bindPreview();
 
-            document.getElementById('storeForm').addEventListener('submit', (event) => {
+            bindPreview();
+        }
+        function collectStorePayload() {
+            return {
+                name: document.getElementById('storeName').value.trim(),
+                manager: document.getElementById('storeManager').value.trim(),
+                phone: document.getElementById('storePhone').value.trim(),
+                hotline: document.getElementById('storeHotline').value.trim(),
+                email: document.getElementById('storeEmail').value.trim(),
+                openHours: document.getElementById('storeHours').value.trim(),
+                address: document.getElementById('storeAddress').value.trim(),
+                facebook: document.getElementById('storeFacebook').value.trim(),
+                instagram: document.getElementById('storeInstagram').value.trim(),
+                description: document.getElementById('storeDescription').value.trim(),
+                policy: document.getElementById('storePolicy').value.trim()
+            };
+        }
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
+            if (!user) return;
+            document.getElementById('managerSidebarName').textContent = user.name;
+            try {
+                const store = await apiGet('/store-info');
+                fillStoreForm(store);
+            } catch (error) {
+                EleganceApp.renderNotice(
+                    'storeNotice',
+                    error.message || 'Không thể tải thông tin cửa hàng.',
+                    'error'
+                );
+            }
+            document.getElementById('storeForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
-                EleganceApp.updateDb((db) => {
-                    db.storeInfo = {
-                        name: document.getElementById('storeName').value.trim(),
-                        manager: document.getElementById('storeManager').value.trim(),
-                        phone: document.getElementById('storePhone').value.trim(),
-                        hotline: document.getElementById('storeHotline').value.trim(),
-                        email: document.getElementById('storeEmail').value.trim(),
-                        openHours: document.getElementById('storeHours').value.trim(),
-                        address: document.getElementById('storeAddress').value.trim(),
-                        facebook: document.getElementById('storeFacebook').value.trim(),
-                        instagram: document.getElementById('storeInstagram').value.trim(),
-                        description: document.getElementById('storeDescription').value.trim(),
-                        policy: document.getElementById('storePolicy').value.trim()
-                    };
-                });
-                EleganceApp.renderNotice('storeNotice', 'Đã cập nhật thông tin và chính sách cửa hàng.', 'success');
+
+                try {
+                    const payload = collectStorePayload();
+                    await apiPut('/store-info', payload);
+
+                    EleganceApp.renderNotice(
+                        'storeNotice',
+                        'Đã cập nhật thông tin và chính sách cửa hàng.',
+                        'success'
+                    );
+
+                    bindPreview();
+                } catch (error) {
+                    EleganceApp.renderNotice(
+                        'storeNotice',
+                        error.message || 'Không thể cập nhật thông tin cửa hàng.',
+                        'error'
+                    );
+                }
             });
         });
     </script>

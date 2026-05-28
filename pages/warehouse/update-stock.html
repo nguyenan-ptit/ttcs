@@ -20,17 +20,17 @@
     <aside class="dashboard-sidebar">
         <div class="dashboard-brand">
             <a href="import.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
-            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh kho</div>
+            <div class="dashboard-brand-subtitle">Bảng điều hành kho</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <div class="sidebar-section-title">Menu chính</div>
             <a href="import.html" class="sidebar-link"><span>Thực hiện nhập kho</span></a>
             <a href="update-stock.html" class="sidebar-link active"><span>Cập nhật tồn kho</span></a>
             <a href="return.html" class="sidebar-link"><span>Nhận hàng đổi trả</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
-                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n kho</div>
+                <div class="text-xs uppercase text-white/45">Nhân viên kho</div>
                 <div id="warehouseUserName" class="mt-2 font-semibold">Nhân viên kho</div>
             </div>
             <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
@@ -44,9 +44,8 @@
                 <p class="dashboard-header-copy">Tìm sản phẩm, nhập số lượng thực tế kiểm kê cho từng biến thể màu và size.</p>
             </div>
             <div class="dashboard-header-actions">
-                <a href="import.html" class="btn-secondary">Thực hiện nhập kho</a>
                 <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="warehouseHeaderName">Nh&#226;n vi&#234;n kho</b></span>
+                    <span class="text-sm text-gray-500">Xin chào, <b id="warehouseHeaderName">Nhân viên kho</b></span>
                     <div id="warehouseAvatar" class="dashboard-avatar">K</div>
                 </div>
             </div>
@@ -64,7 +63,7 @@
                         <form id="searchForm" class="stack">
                             <div>
                                 <label class="form-label" for="productKeyword">Tên hoặc mã sản phẩm</label>
-                                <input id="productKeyword" class="form-input" type="text" placeholder="Ví dụ: PRD-001, áo sơ mi, JEAN-SLIM-02">
+                                <input id="productKeyword" class="form-input" type="text" placeholder="Ví dụ: PRD-001, áo sơ mi, quần jean">
                                 <p class="form-hint">Có thể nhập tên sản phẩm hoặc mã SKU để tìm nhanh.</p>
                             </div>
                             <div class="flex justify-end">
@@ -127,17 +126,40 @@
         </div>
     </main>
 
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
         let selectedProductId = null;
+        let products = [];
+        let adjustments = [];
 
-        function getCurrentStaffName() {
-            return EleganceApp.getCurrentUser()?.name || 'Nhân viên kho';
+        function getCurrentUserId() {
+            return EleganceApp.getCurrentUser()?.userId;
+        }
+
+        function searchProducts(keyword) {
+            const normalizedKeyword = EleganceApp.normalizeText(keyword);
+
+            if (!normalizedKeyword) {
+                return products;
+            }
+
+            return products.filter((product) =>
+                EleganceApp.normalizeText(product.name).includes(normalizedKeyword) ||
+                EleganceApp.normalizeText(product.sku).includes(normalizedKeyword)
+            );
+        }
+
+        function findProduct(productId) {
+            return products.find((product) => product.id === productId);
         }
 
         function renderAdjustments() {
-            const adjustments = EleganceApp.getDb().stockAdjustments.slice(0, 8);
-            document.getElementById('stockAdjustmentsList').innerHTML = adjustments.map((item) => `
+            const visibleAdjustments = adjustments
+                .filter((item) => item.type !== 'IMPORT')
+                .slice(0, 8);
+
+            document.getElementById('stockAdjustmentsList').innerHTML = visibleAdjustments.map((item) => `
                 <div class="quick-list-item">
                     <div>
                         <div class="font-semibold text-gray-900">${item.productName}</div>
@@ -150,14 +172,15 @@
             `).join('') || '<div class="empty-state">Chưa có lịch sử điều chỉnh.</div>';
         }
 
-        function renderSearchResults(products) {
+        function renderSearchResults(resultProducts) {
             const container = document.getElementById('productResults');
-            if (!products.length) {
+
+            if (!resultProducts.length) {
                 container.innerHTML = '<div class="empty-state">Không tìm thấy sản phẩm phù hợp.</div>';
                 return;
             }
 
-            container.innerHTML = products.map((product) => `
+            container.innerHTML = resultProducts.map((product) => `
                 <button type="button" class="quick-list-item text-left w-full hover:bg-[#fffaf4] transition" onclick="selectProduct('${product.id}')">
                     <div>
                         <div class="font-semibold text-gray-900">${product.sku} - ${product.name}</div>
@@ -170,14 +193,18 @@
 
         function selectProduct(productId) {
             selectedProductId = productId;
-            const product = EleganceApp.findProductById(productId);
-            const variants = EleganceApp.getProductVariants(productId);
+            const product = findProduct(productId);
+
+            if (!product) {
+                EleganceApp.renderNotice('stockNotice', 'Không tìm thấy sản phẩm.', 'error');
+                return;
+            }
 
             document.getElementById('stockEmptyState').classList.add('hidden');
             document.getElementById('stockAuditForm').classList.remove('hidden');
             document.getElementById('selectedProductTitle').textContent = product.name;
             document.getElementById('selectedProductMeta').textContent = `${product.sku} • Tồn tổng hiện tại: ${product.stock} sản phẩm`;
-            document.getElementById('variantTableBody').innerHTML = variants.map((variant) => `
+            document.getElementById('variantTableBody').innerHTML = (product.variants || []).map((variant) => `
                 <tr>
                     <td>${variant.color}</td>
                     <td>${variant.size}</td>
@@ -187,32 +214,48 @@
                     </td>
                 </tr>
             `).join('');
+
             EleganceApp.hideNotice('stockNotice');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        async function loadInventoryData() {
+            [products, adjustments] = await Promise.all([
+                apiGet('/inventory/products'),
+                apiGet('/inventory/logs')
+            ]);
+
+            renderSearchResults(products);
+            renderAdjustments();
+
+            if (selectedProductId) {
+                selectProduct(selectedProductId);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['WAREHOUSE'], '../auth/login.html');
             if (!user) return;
+
             document.getElementById('warehouseUserName').textContent = user.name;
             EleganceApp.hydrateUser('warehouseHeaderName', 'warehouseAvatar', user.name);
-
-            renderSearchResults(EleganceApp.getDb().products);
-            renderAdjustments();
 
             document.getElementById('searchForm').addEventListener('submit', (event) => {
                 event.preventDefault();
                 const keyword = document.getElementById('productKeyword').value.trim();
+
                 if (!keyword) {
                     EleganceApp.renderNotice('searchNotice', 'Vui lòng nhập tên hoặc mã sản phẩm để tìm kiếm.', 'error');
                     renderSearchResults([]);
                     return;
                 }
+
                 EleganceApp.hideNotice('searchNotice');
-                renderSearchResults(EleganceApp.searchProducts(keyword));
+                renderSearchResults(searchProducts(keyword));
             });
 
-            document.getElementById('stockAuditForm').addEventListener('submit', (event) => {
+            document.getElementById('stockAuditForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
+
                 const inputs = Array.from(document.querySelectorAll('.audit-input'));
                 const invalidInput = inputs.find((input) => {
                     const value = input.value.trim();
@@ -221,28 +264,34 @@
 
                 if (invalidInput) {
                     invalidInput.focus();
-                    EleganceApp.renderNotice('stockNotice', 'Số lượng thực tế không được bỏ trống và phải là số nguyên hợp lệ. Vui lòng nhập lại.', 'error');
+                    EleganceApp.renderNotice('stockNotice', 'Số lượng thực tế không được bỏ trống và phải là số nguyên hợp lệ.', 'error');
                     return;
                 }
 
                 try {
-                    const result = EleganceApp.createStockAudit({
+                    const result = await apiPost('/inventory/audits', {
                         productId: selectedProductId,
+                        userId: getCurrentUserId(),
                         items: inputs.map((input) => ({
                             variantId: input.dataset.variantId,
-                            actualStock: input.value
+                            actualStock: Number(input.value)
                         })),
-                        note: document.getElementById('auditNote').value,
-                        staff: getCurrentStaffName()
+                        note: document.getElementById('auditNote').value
                     });
+
                     EleganceApp.renderNotice('stockNotice', `Đã cập nhật tồn kho. Có ${result.updatedCount} biến thể thay đổi số lượng.`, 'success');
-                    selectProduct(selectedProductId);
-                    renderSearchResults(EleganceApp.searchProducts(document.getElementById('productKeyword').value.trim()));
-                    renderAdjustments();
+                    await loadInventoryData();
+                    renderSearchResults(searchProducts(document.getElementById('productKeyword').value.trim()));
                 } catch (error) {
                     EleganceApp.renderNotice('stockNotice', error.message, 'error');
                 }
             });
+
+            try {
+                await loadInventoryData();
+            } catch (error) {
+                EleganceApp.renderNotice('searchNotice', error.message || 'Không tải được dữ liệu tồn kho.', 'error');
+            }
         });
     </script>
 </body>

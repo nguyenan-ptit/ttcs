@@ -136,14 +136,14 @@
 
         </div>
     </main>
-
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
         function logout() {
             EleganceApp.logout('../auth/login.html');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['ADMIN'], '../auth/login.html');
             if (!user) return;
 
@@ -151,11 +151,16 @@
                 document.getElementById('adminNameDisplay').innerText = user.name;
             }
 
-            const uiConfig = EleganceApp.getDb().uiConfig;
-            document.getElementById('bannerUrl').value = uiConfig.bannerUrl;
-            document.getElementById('bannerPreview').src = uiConfig.bannerUrl;
-            document.getElementById('topBarText').value = uiConfig.topBarText;
-            document.getElementById('topBarStatus').value = uiConfig.topBarVisible ? 'active' : 'hidden';
+            try {
+                const uiConfig = await apiGet('/site-settings/ui');
+
+                document.getElementById('bannerUrl').value = uiConfig.bannerUrl;
+                document.getElementById('bannerPreview').src = uiConfig.bannerUrl;
+                document.getElementById('topBarText').value = uiConfig.topBarText;
+                document.getElementById('topBarStatus').value = uiConfig.topBarVisible ? 'active' : 'hidden';
+            } catch (error) {
+                EleganceApp.renderNotice('uiNotice', error.message || 'Không thể tải cấu hình giao diện.', 'error');
+            }
 
             document.getElementById('bannerUrl').addEventListener('input', function (event) {
                 document.getElementById('bannerPreview').src = event.target.value;
@@ -163,19 +168,33 @@
 
             document.getElementById('bannerForm').addEventListener('submit', function (event) {
                 event.preventDefault();
-                EleganceApp.upsertUiConfig({
-                    bannerUrl: document.getElementById('bannerUrl').value.trim()
-                });
-                EleganceApp.renderNotice('uiNotice', 'Đã cập nhật Banner trang chủ thành công.', 'success');
+                try {
+                    await apiPut('/site-settings/ui', {
+                        bannerUrl: document.getElementById('bannerUrl').value.trim(),
+                        topBarText: document.getElementById('topBarText').value.trim(),
+                        topBarVisible: document.getElementById('topBarStatus').value === 'active'
+                    });
+
+                    EleganceApp.renderNotice('uiNotice', 'Đã cập nhật Banner trang chủ thành công.', 'success');
+                } catch (error) {
+                    EleganceApp.renderNotice('uiNotice', error.message || 'Không thể cập nhật Banner.', 'error');
+                }
             });
 
-            document.getElementById('topBarForm').addEventListener('submit', function (event) {
+            document.getElementById('topBarForm').addEventListener('submit', async function (event) {
                 event.preventDefault();
-                EleganceApp.upsertUiConfig({
-                    topBarText: document.getElementById('topBarText').value.trim(),
-                    topBarVisible: document.getElementById('topBarStatus').value === 'active'
-                });
-                EleganceApp.renderNotice('uiNotice', 'Đã cập nhật thông báo khuyến mãi thành công.', 'success');
+
+                try {
+                    await apiPut('/site-settings/ui', {
+                        bannerUrl: document.getElementById('bannerUrl').value.trim(),
+                        topBarText: document.getElementById('topBarText').value.trim(),
+                        topBarVisible: document.getElementById('topBarStatus').value === 'active'
+                    });
+
+                    EleganceApp.renderNotice('uiNotice', 'Đã cập nhật thông báo khuyến mãi thành công.', 'success');
+                } catch (error) {
+                    EleganceApp.renderNotice('uiNotice', error.message || 'Không thể cập nhật thông báo.', 'error');
+                }
             });
         });
     </script>

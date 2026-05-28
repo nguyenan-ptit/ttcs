@@ -23,14 +23,13 @@
             <a href="../category/category-list.html" class="sidebar-link"><span>Quản lý danh mục</span></a>
             <a href="product-list.html" class="sidebar-link active"><span>Quản lý sản phẩm</span></a>
             <a href="../promotion/promotion-list.html" class="sidebar-link"><span>Quản lý khuyến mãi</span></a>
-            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
                 <div class="text-xs uppercase text-white/45">Quản lý</div>
-                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Quản lý</div>
             </div>
-            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+            <button onclick="EleganceApp.logout('../../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
         </div>
     </aside>
 
@@ -38,7 +37,7 @@
         <header class="dashboard-header">
             <div>
                 <h1 class="dashboard-header-title">Quản lý sản phẩm</h1>
-                <p class="dashboard-header-copy">Thêm mới, sửa, xóa, ẩn sản phẩm và quản lý biến thể màu sắc/size.</p>
+                <p class="dashboard-header-copy">Thêm mới, sửa, ẩn sản phẩm và quản lý biến thể màu sắc/size.</p>
             </div>
             <button onclick="openProductForm()" class="btn-primary">Thêm sản phẩm</button>
         </header>
@@ -94,7 +93,7 @@
                     </div>
                     <div>
                         <label class="form-label" for="productSku">SKU</label>
-                        <input class="form-input" id="productSku" type="text" required>
+                        <input class="form-input" id="productSku" type="text" readonly placeholder="Tu dong tao sau khi luu">
                     </div>
                     <div>
                         <label class="form-label" for="productCategory">Danh mục</label>
@@ -108,9 +107,12 @@
                         <label class="form-label" for="productStatusInput">Trạng thái</label>
                         <select class="form-select" id="productStatusInput">
                             <option value="active">Đang bán</option>
-                            <option value="low">Cần bổ sung</option>
                             <option value="draft">Ẩn/Bản nháp</option>
                         </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="form-label" for="productDescription">Mô tả</label>
+                        <textarea class="form-input min-h-[120px]" id="productDescription" required></textarea>
                     </div>
                     <div>
                         <label class="form-label" for="productImage">URL hình ảnh</label>
@@ -122,7 +124,7 @@
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div>
                             <h3 class="font-semibold text-gray-900">Biến thể sản phẩm</h3>
-                            <p class="text-sm text-gray-500 mt-1">Quản lý màu sắc, size và số lượng tồn kho.</p>
+                            <p class="text-sm text-gray-500 mt-1">Quản lý màu sắc, size. Tồn kho do nhân viên kho cập nhật.</p>
                         </div>
                         <button type="button" onclick="addVariantRow()" class="btn-secondary">Thêm biến thể</button>
                     </div>
@@ -136,33 +138,46 @@
             </form>
         </div>
     </div>
-
+    <script src="../../../assets/js/api.js"></script>
     <script src="../../../assets/js/main.js"></script>
     <script>
         let productKeyword = '';
         let statusFilter = '';
         let editingVariants = [];
-
+        let products = [];
+        let categories = [];
+        async function loadProducts() {
+            [products, categories] = await Promise.all([
+                apiGet('/products'),
+                apiGet('/products/categories')
+            ]);
+            renderProductTable();
+        }
+        function showNotice(message, type) {
+            EleganceApp.renderNotice('productNotice', message, type);
+        }
         function renderCategoryOptions(selectedId) {
-            const categories = EleganceApp.getDb().categories.filter((category) => category.status !== 'draft');
-            document.getElementById('productCategory').innerHTML = categories.map((category) =>
-                `<option value="${category.id}" ${category.id === selectedId ? 'selected' : ''}>${category.name}</option>`
+            const availableCategories = categories.filter((category) =>
+                category.status === 'active' || Number(category.categoryId) === Number(selectedId)
+            );
+
+            document.getElementById('productCategory').innerHTML = availableCategories.map((category) =>
+                `<option value="${category.categoryId}" ${Number(category.categoryId) === Number(selectedId) ? 'selected' : ''}>${category.name}</option>`
             ).join('');
         }
 
         function renderProductTable() {
-            const db = EleganceApp.getDb();
             const keyword = EleganceApp.normalizeText(productKeyword);
-            const products = db.products.filter((product) => {
+            const filteredProducts = products.filter((product) => {
                 const matchesKeyword = !keyword || EleganceApp.normalizeText(product.name).includes(keyword) || EleganceApp.normalizeText(product.sku).includes(keyword);
                 const matchesStatus = !statusFilter || product.status === statusFilter;
                 return matchesKeyword && matchesStatus;
             });
 
-            document.getElementById('productTable').innerHTML = products.map((product) => {
-                const category = EleganceApp.findCategoryById(product.categoryId);
+            document.getElementById('productTable').innerHTML = filteredProducts.map((product) => {
+                const category = { name: product.categoryName };
                 const meta = EleganceApp.productStatusMeta(product.status);
-                const variants = EleganceApp.getProductVariants(product.id);
+                const variants = product.variants || [];
                 return `
                     <tr>
                         <td>${product.sku}</td>
@@ -176,7 +191,6 @@
                             <div class="flex flex-wrap gap-3">
                                 <button onclick="openProductForm('${product.id}')" class="text-[#a87b51] font-medium">Sửa</button>
                                 <button onclick="toggleProductHidden('${product.id}')" class="text-amber-700 font-medium">${product.status === 'draft' ? 'Hiện' : 'Ẩn'}</button>
-                                <button onclick="deleteProduct('${product.id}')" class="text-red-600 font-medium">Xóa</button>
                             </div>
                         </td>
                     </tr>
@@ -189,13 +203,14 @@
                 id: variant.id || '',
                 color: variant.color || '',
                 size: variant.size || '',
-                stock: Number(variant.stock || 0)
+                stock: Number(variant.stock || 0),
+                isActive: variant.isActive === false ? false : true
             });
             renderVariantRows();
         }
 
-        function removeVariantRow(index) {
-            editingVariants.splice(index, 1);
+        function toggleVariantActive(index) {
+            editingVariants[index].isActive = editingVariants[index].isActive === false ? true : false;
             renderVariantRows();
         }
 
@@ -212,35 +227,40 @@
                         <input class="form-input" data-variant-size value="${variant.size}" placeholder="S, M, L, 30...">
                     </div>
                     <div>
-                        <label class="form-label">Số lượng</label>
-                        <input class="form-input" data-variant-stock type="number" min="0" value="${variant.stock}">
+                             <label class="form-label">Tồn kho</label>
+                             <div class="form-input bg-gray-50 text-gray-500">
+                                ${Number(variant.stock || 0)}
+                            </div>
                     </div>
-                    <button type="button" onclick="removeVariantRow(${index})" class="btn-secondary text-red-600">Xóa</button>
+                    <button type="button" onclick="toggleVariantActive(${index})" class="btn-secondary text-amber-700">
+                        ${variant.isActive === false ? 'Hiện' : 'Ẩn'}
+                    </button>
                 </div>
             `).join('') || '<div class="empty-state">Chưa có biến thể. Hãy thêm ít nhất một màu/size.</div>';
         }
 
         function collectVariants() {
             const rows = [...document.querySelectorAll('#variantRows > div.grid')];
-            return rows.map((row) => ({
+            return rows.map((row, index) => ({
                 id: row.querySelector('[data-variant-id]').value,
                 color: row.querySelector('[data-variant-color]').value.trim(),
                 size: row.querySelector('[data-variant-size]').value.trim(),
-                stock: Number(row.querySelector('[data-variant-stock]').value || 0)
+                isActive: editingVariants[index]?.isActive === false ? false : true
             })).filter((variant) => variant.color && variant.size);
         }
 
         function openProductForm(productId) {
-            const product = productId ? EleganceApp.findProductById(productId) : null;
+            const product = productId ? products.find((item) => item.id === productId) : null;
             renderCategoryOptions(product?.categoryId);
             document.getElementById('productModalTitle').textContent = product ? 'Sửa sản phẩm' : 'Thêm sản phẩm';
             document.getElementById('productId').value = product?.id || '';
             document.getElementById('productName').value = product?.name || '';
             document.getElementById('productSku').value = product?.sku || '';
             document.getElementById('productPrice').value = product?.price || '';
+            document.getElementById('productDescription').value = product?.description || '';
             document.getElementById('productStatusInput').value = product?.status || 'active';
             document.getElementById('productImage').value = product?.image || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=600&auto=format&fit=crop';
-            editingVariants = product ? EleganceApp.getProductVariants(product.id).map((variant) => ({ ...variant })) : [];
+            editingVariants = product ? (product.variants || []).map((variant) => ({ ...variant })) : [];
             if (!editingVariants.length) addVariantRow();
             else renderVariantRows();
             document.getElementById('productModal').classList.remove('hidden');
@@ -252,28 +272,32 @@
             document.getElementById('productModal').classList.remove('flex');
         }
 
-        function toggleProductHidden(productId) {
-            EleganceApp.updateDb((db) => {
-                const product = db.products.find((item) => item.id === productId);
-                product.status = product.status === 'draft' ? 'active' : 'draft';
-            });
-            EleganceApp.renderNotice('productNotice', 'Đã cập nhật trạng thái hiển thị của sản phẩm.', 'success');
-            renderProductTable();
-        }
+        async function toggleProductHidden(productId) {
+            const product = products.find((item) => item.id === productId);
 
-        function deleteProduct(productId) {
-            if (!confirm('Bạn chắc chắn muốn xóa sản phẩm này và toàn bộ biến thể?')) return;
-            EleganceApp.updateDb((db) => {
-                db.products = db.products.filter((product) => product.id !== productId);
-                db.inventoryVariants = db.inventoryVariants.filter((variant) => variant.productId !== productId);
-            });
-            EleganceApp.renderNotice('productNotice', 'Đã xóa sản phẩm.', 'success');
-            renderProductTable();
+            if (!product) {
+                showNotice('Không tìm thấy sản phẩm.', 'error');
+                return;
+            }
+
+            const nextIsActive = product.status === 'draft';
+
+            try {
+                await apiPatch(`/products/${productId}/status`, {
+                    isActive: nextIsActive
+                });
+
+                showNotice(nextIsActive ? 'Đã hiện sản phẩm.' : 'Đã ẩn sản phẩm.', 'success');
+                await loadProducts();
+            } catch (error) {
+                showNotice(error.message || 'Không thể cập nhật trạng thái sản phẩm.', 'error');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
             if (!user) return;
+            document.getElementById('managerSidebarName').textContent = user.name;
 
             document.getElementById('productKeyword').addEventListener('input', (event) => {
                 productKeyword = event.target.value;
@@ -284,7 +308,7 @@
                 renderProductTable();
             });
 
-            document.getElementById('productForm').addEventListener('submit', (event) => {
+            document.getElementById('productForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const id = document.getElementById('productId').value;
                 const variants = collectVariants();
@@ -293,47 +317,40 @@
                     return;
                 }
 
-                EleganceApp.updateDb((db) => {
-                    const productId = id || `PRD-${String(db.products.length + 1).padStart(3, '0')}`;
-                    const stock = variants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
-                    const payload = {
-                        id: productId,
-                        sku: document.getElementById('productSku').value.trim(),
-                        name: document.getElementById('productName').value.trim(),
-                        categoryId: document.getElementById('productCategory').value,
-                        price: Number(document.getElementById('productPrice').value),
-                        stock,
-                        status: document.getElementById('productStatusInput').value,
-                        featured: false,
-                        image: document.getElementById('productImage').value.trim()
-                    };
+                const payload = {
+                    name: document.getElementById('productName').value.trim(),
+                    categoryId: Number(document.getElementById('productCategory').value),
+                    price: Number(document.getElementById('productPrice').value),
+                    description: document.getElementById('productDescription').value.trim(),
+                    isActive: document.getElementById('productStatusInput').value === 'active',
+                    variants
+                };
 
+                try {
                     if (id) {
-                        const target = db.products.find((item) => item.id === id);
-                        Object.assign(target, payload);
-                        db.inventoryVariants = db.inventoryVariants.filter((variant) => variant.productId !== id);
+                        await apiPut(`/products/${id}`, payload);
                     } else {
-                        db.products.push(payload);
+                        await apiPost('/products', payload);
                     }
 
-                    const nextVariantStart = db.inventoryVariants.length + 1;
-                    variants.forEach((variant, index) => {
-                        db.inventoryVariants.push({
-                            id: variant.id || `VAR-${String(nextVariantStart + index).padStart(3, '0')}`,
-                            productId,
-                            color: variant.color,
-                            size: variant.size,
-                            stock: Number(variant.stock || 0)
-                        });
-                    });
-                });
+                    closeProductForm();
+                    EleganceApp.renderNotice(
+                        'productNotice',
+                        id ? 'Đã cập nhật sản phẩm và biến thể.' : 'Đã thêm sản phẩm mới.',
+                        'success'
+                    );
 
-                closeProductForm();
-                EleganceApp.renderNotice('productNotice', id ? 'Đã cập nhật sản phẩm và biến thể.' : 'Đã thêm sản phẩm mới.', 'success');
-                renderProductTable();
+                    await loadProducts();
+                } catch (error) {
+                    EleganceApp.renderNotice(
+                        'productNotice',
+                        error.message || 'Không thể lưu sản phẩm.',
+                        'error'
+                    );
+                }
             });
 
-            renderProductTable();
+            loadProducts();
         });
     </script>
 </body>

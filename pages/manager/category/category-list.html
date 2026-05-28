@@ -23,14 +23,13 @@
             <a href="category-list.html" class="sidebar-link active"><span>Quản lý danh mục</span></a>
             <a href="../product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
             <a href="../promotion/promotion-list.html" class="sidebar-link"><span>Quản lý khuyến mãi</span></a>
-            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
                 <div class="text-xs uppercase text-white/45">Quản lý</div>
-                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Quản lý</div>
             </div>
-            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+            <button onclick="EleganceApp.logout('../../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
         </div>
     </aside>
 
@@ -56,7 +55,6 @@
                                 <tr>
                                     <th>Mã</th>
                                     <th>Tên danh mục</th>
-                                    <th>Mô tả</th>
                                     <th>Số sản phẩm</th>
                                     <th>Trạng thái</th>
                                     <th>Hành động</th>
@@ -90,10 +88,6 @@
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label class="form-label" for="categoryDescription">Mô tả</label>
-                    <textarea class="form-textarea" id="categoryDescription"></textarea>
-                </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeCategoryForm()" class="btn-secondary">Hủy</button>
                     <button type="submit" class="btn-primary">Lưu danh mục</button>
@@ -101,11 +95,15 @@
             </form>
         </div>
     </div>
-
+    <script src="../../../assets/js/api.js"></script>
     <script src="../../../assets/js/main.js"></script>
     <script>
         let categoryKeyword = '';
-
+        let categories = [];
+        async function loadCategories() {
+            categories = await apiGet('/products/categories');
+           renderCategoryTable()
+        }
         function getCategoryMeta(status) {
             return status === 'active'
                 ? { label: 'Đang dùng', className: 'badge-success' }
@@ -113,40 +111,41 @@
         }
 
         function renderCategoryTable() {
-            const db = EleganceApp.getDb();
             const keyword = EleganceApp.normalizeText(categoryKeyword);
-            const rows = db.categories.filter((category) => !keyword || EleganceApp.normalizeText(category.name).includes(keyword));
+            const rows = categories.filter((category) =>
+                !keyword || EleganceApp.normalizeText(category.name).includes(keyword)
+            );
 
             document.getElementById('categoryTable').innerHTML = rows.map((category) => {
-                const count = db.products.filter((product) => product.categoryId === category.id).length;
                 const meta = getCategoryMeta(category.status);
                 return `
                     <tr>
                         <td>${category.id}</td>
                         <td class="font-semibold text-gray-900">${category.name}</td>
-                        <td class="text-gray-500">${category.description || '--'}</td>
-                        <td>${count}</td>
+                        <td>${category.productCount || 0}</td>
                         <td><span class="badge ${meta.className}">${meta.label}</span></td>
                         <td>
                             <div class="flex flex-wrap gap-3">
-                                <button onclick="openCategoryForm('${category.id}')" class="text-[#a87b51] font-medium">Sửa</button>
-                                <button onclick="deleteCategory('${category.id}')" class="text-red-600 font-medium">Xóa</button>
+                                <button onclick="openCategoryForm('${category.categoryId}')" class="text-[#a87b51] font-medium">Sửa</button>
+                                <button onclick="toggleCategoryHidden('${category.categoryId}')" class="text-amber-700 font-medium">${category.status === 'draft' ? 'Hiện' : 'Ẩn'}</button>
                             </div>
                         </td>
                     </tr>
                 `;
-            }).join('') || '<tr><td colspan="6" class="empty-state">Chưa có danh mục nào.</td></tr>';
+            }).join('') || '<tr><td colspan="5" class="empty-state">Chưa có danh mục nào.</td></tr>';
         }
 
         function openCategoryForm(categoryId) {
-            const category = categoryId ? EleganceApp.getDb().categories.find((item) => item.id === categoryId) : null;
-            document.getElementById('categoryModalTitle').textContent = category ? 'Sửa danh mục' : 'Thêm danh mục';
-            document.getElementById('categoryId').value = category?.id || '';
-            document.getElementById('categoryName').value = category?.name || '';
-            document.getElementById('categoryStatus').value = category?.status || 'active';
-            document.getElementById('categoryDescription').value = category?.description || '';
-            document.getElementById('categoryModal').classList.remove('hidden');
-            document.getElementById('categoryModal').classList.add('flex');
+            const category = categoryId
+                ? categories.find((item) => Number(item.categoryId) === Number(categoryId))
+                : null;
+
+                document.getElementById('categoryModalTitle').textContent = category ? 'Sửa danh mục' : 'Thêm danh mục';
+                document.getElementById('categoryId').value = category?.categoryId || '';
+                document.getElementById('categoryName').value = category?.name || '';
+                document.getElementById('categoryStatus').value = category?.status || 'active';
+                document.getElementById('categoryModal').classList.remove('hidden');
+                document.getElementById('categoryModal').classList.add('flex');
         }
 
         function closeCategoryForm() {
@@ -154,57 +153,91 @@
             document.getElementById('categoryModal').classList.remove('flex');
         }
 
-        function deleteCategory(categoryId) {
-            const db = EleganceApp.getDb();
-            if (db.products.some((product) => product.categoryId === categoryId)) {
-                EleganceApp.renderNotice('categoryNotice', 'Không thể xóa danh mục đang có sản phẩm. Hãy chuyển sản phẩm sang danh mục khác trước.', 'error');
+        async function toggleCategoryHidden(categoryId) {
+            const category = categories.find((item) => Number(item.categoryId) === Number(categoryId));
+
+            if (!category) {
+                EleganceApp.renderNotice('categoryNotice', 'Không tìm thấy danh mục.', 'error');
                 return;
             }
-            if (!confirm('Bạn chắc chắn muốn xóa danh mục này?')) return;
-            EleganceApp.updateDb((nextDb) => {
-                nextDb.categories = nextDb.categories.filter((item) => item.id !== categoryId);
-            });
-            EleganceApp.renderNotice('categoryNotice', 'Đã xóa danh mục.', 'success');
-            renderCategoryTable();
-        }
+        const nextIsActive = category.status === 'draft';
 
+        try {
+            await apiPatch(`/products/categories/${categoryId}/status`, {
+                isActive: nextIsActive
+            });
+
+            EleganceApp.renderNotice(
+                'categoryNotice',
+                nextIsActive ? 'Đã hiện danh mục.' : 'Đã ẩn danh mục.',
+                'success'
+            );
+
+            await loadCategories();
+        } catch (error) {
+            EleganceApp.renderNotice(
+                'categoryNotice',
+                error.message || 'Không thể cập nhật trạng thái danh mục.',
+                'error'
+            );
+        }
+    }
         document.addEventListener('DOMContentLoaded', () => {
             const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
             if (!user) return;
+            document.getElementById('managerSidebarName').textContent = user.name;
 
             document.getElementById('categorySearch').addEventListener('input', (event) => {
                 categoryKeyword = event.target.value;
                 renderCategoryTable();
             });
 
-            document.getElementById('categoryForm').addEventListener('submit', (event) => {
+            document.getElementById('categoryForm').addEventListener('submit',async (event) => {
                 event.preventDefault();
                 const id = document.getElementById('categoryId').value;
                 const payload = {
                     name: document.getElementById('categoryName').value.trim(),
-                    status: document.getElementById('categoryStatus').value,
-                    description: document.getElementById('categoryDescription').value.trim()
+                    status: document.getElementById('categoryStatus').value
                 };
 
-                EleganceApp.updateDb((db) => {
-                    if (id) {
-                        const target = db.categories.find((item) => item.id === id);
-                        Object.assign(target, payload);
-                    } else {
-                        db.categories.push({
-                            id: `CAT-${String(db.categories.length + 1).padStart(2, '0')}`,
-                            productCount: 0,
-                            ...payload
-                        });
-                    }
-                });
+                try {
+                if (id) {
+                    await apiPut(`/products/categories/${id}`, {
+                        name: payload.name
+                    });
+
+                    await apiPatch(`/products/categories/${id}/status`, {
+                        isActive: payload.status === 'active'
+                    });
+                } else {
+                    await apiPost('/products/categories', {
+                        name: payload.name
+                    });
+                }
+
+    closeCategoryForm();
+
+    EleganceApp.renderNotice(
+        'categoryNotice',
+        id ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.',
+        'success'
+    );
+
+    await loadCategories();
+} catch (error) {
+    EleganceApp.renderNotice(
+        'categoryNotice',
+        error.message || 'Không thể lưu danh mục.',
+        'error'
+    );
+}
 
                 closeCategoryForm();
                 EleganceApp.renderNotice('categoryNotice', id ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.', 'success');
                 renderCategoryTable();
             });
 
-            renderCategoryTable();
+            loadCategories();
         });
     </script>
 </body>

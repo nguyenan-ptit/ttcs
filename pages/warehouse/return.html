@@ -41,7 +41,7 @@
         <header class="dashboard-header">
             <div>
                 <h1 class="dashboard-header-title">Nhận hàng đổi trả</h1>
-                <p class="dashboard-header-copy">Chọn phiếu đang xử lý để tự điền thông tin, chỉnh sửa nếu cần và xác nhận nhập lại vào kho.</p>
+                <p class="dashboard-header-copy">Chọn phiếu đổi trả hoặc nhập thủ công để xác nhận hàng được nhập lại vào kho.</p>
             </div>
             <div class="dashboard-header-actions">
                 <div class="flex items-center gap-3">
@@ -61,7 +61,7 @@
                             <div class="form-grid">
                                 <div>
                                     <label class="form-label" for="returnSource">Khách hàng / mã đơn</label>
-                                    <input id="returnSource" class="form-input" type="text" placeholder="Ví dụ: ORD-102265 - Trần Thị Mai">
+                                    <input id="returnSource" class="form-input" type="text" placeholder="Ví dụ: ORD-001 - Hoàng Văn Nam">
                                 </div>
                                 <div>
                                     <label class="form-label" for="returnProduct">Sản phẩm</label>
@@ -94,8 +94,8 @@
 
                 <section class="surface-card">
                     <div class="surface-card-body">
-                        <div class="eyebrow">Đang xử lý</div>
-                        <h2 class="section-title">Phiếu đổi trả gần đây</h2>
+                        <div class="eyebrow">Gần đây</div>
+                        <h2 class="section-title">Phiếu đổi trả</h2>
                         <div id="customerReturnList" class="quick-list mt-6"></div>
                     </div>
                 </section>
@@ -103,98 +103,111 @@
         </div>
     </main>
 
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
-        let editingReturnId = null;
+        let editingReturn = null;
+        let products = [];
+        let customerReturns = [];
 
-        function getCurrentStaffName() {
-            return EleganceApp.getCurrentUser()?.name || 'Nhân viên kho';
+        function getCurrentUserId() {
+            return EleganceApp.getCurrentUser()?.userId;
         }
 
-        function fillVariantSelect(productId) {
-            const variants = EleganceApp.getProductVariants(productId);
-            const select = document.getElementById('returnVariant');
-            select.innerHTML = variants.map((variant) => `
-                <option value="${variant.id}">${EleganceApp.getVariantLabel(variant)} - tồn hiện tại: ${variant.stock}</option>
-            `).join('');
+        function findProduct(productId) {
+            return products.find((product) => product.id === productId);
         }
 
-        function findVariantIdByOrderItem(item) {
-            const variant = EleganceApp.getDb().inventoryVariants.find((entry) =>
-                entry.productId === item.productId &&
-                entry.color === item.color &&
-                entry.size === item.size
-            );
-            return variant?.id || '';
+        function getProductVariants(productId) {
+            return findProduct(productId)?.variants || [];
         }
 
         function getReturnStatusMeta(status) {
-            if (status === 'completed') {
-                return { className: 'badge-success', label: 'Đã nhập lại' };
+            const map = {
+                pending: { className: 'badge-info', label: 'Chờ xử lý' },
+                processing: { className: 'badge-warning', label: 'Đang xử lý' },
+                completed: { className: 'badge-success', label: 'Đã nhập lại' },
+                rejected: { className: 'badge-danger', label: 'Từ chối' }
+            };
+
+            return map[status] || { className: 'badge-dark', label: status || 'Không rõ' };
+        }
+
+        function fillProductSelect(selectedId) {
+            const select = document.getElementById('returnProduct');
+
+            select.innerHTML = products.map((product) => `
+                <option value="${product.id}" ${product.id === selectedId ? 'selected' : ''}>${product.sku} - ${product.name}</option>
+            `).join('');
+
+            if (!products.length) {
+                select.innerHTML = '<option value="">Chưa có sản phẩm</option>';
             }
-            if (status === 'rejected') {
-                return { className: 'badge-danger', label: 'Từ chối' };
+
+            fillVariantSelect(select.value);
+        }
+
+        function fillVariantSelect(productId, selectedVariantId) {
+            const variants = getProductVariants(productId);
+            const select = document.getElementById('returnVariant');
+
+            select.innerHTML = variants.map((variant) => `
+                <option value="${variant.id}" ${variant.id === selectedVariantId ? 'selected' : ''}>
+                    ${variant.color} / ${variant.size} - tồn hiện tại: ${variant.stock}${variant.status === 'draft' ? ' - đang ẩn' : ''}
+                </option>
+            `).join('');
+
+            if (!variants.length) {
+                select.innerHTML = '<option value="">Sản phẩm chưa có biến thể</option>';
             }
-            return { className: 'badge-warning', label: 'Đang xử lý' };
         }
 
         function resetReturnForm() {
-            editingReturnId = null;
+            editingReturn = null;
             document.getElementById('customerReturnForm').reset();
-            const productSelect = document.getElementById('returnProduct');
-            fillVariantSelect(productSelect.value);
             document.getElementById('returnQuantity').value = '1';
             document.getElementById('returnSubmitButton').textContent = 'Xác nhận nhận hàng';
+            fillProductSelect(products[0]?.id);
             EleganceApp.hideNotice('selectedReturnNotice');
         }
 
-        function selectReturnForReceive(returnId) {
-            const db = EleganceApp.getDb();
-            const record = db.returns.find((item) => item.id === returnId && item.type === 'customer');
+        function selectReturnForReceive(returnItemId) {
+            const record = customerReturns.find((item) => item.id === returnItemId);
+
             if (!record) {
                 EleganceApp.renderNotice('returnNotice', 'Không tìm thấy phiếu đổi trả cần xử lý.', 'error');
                 return;
             }
+
             if (record.status === 'completed') {
                 EleganceApp.renderNotice('returnNotice', 'Phiếu này đã được nhập lại trước đó.', 'info');
                 return;
             }
 
-            let variantId = record.variantId || '';
-            if (!variantId && record.orderId) {
-                const order = db.orders.find((item) => item.id === record.orderId);
-                const orderItem = order?.items.find((item) => item.productId === record.productId) || order?.items[0];
-                if (orderItem) {
-                    variantId = findVariantIdByOrderItem(orderItem);
-                }
+            if (record.status === 'rejected') {
+                EleganceApp.renderNotice('returnNotice', 'Phiếu này đã bị từ chối.', 'error');
+                return;
             }
 
-            const productId = record.productId || db.products[0]?.id || '';
+            editingReturn = record;
+
             document.getElementById('returnSource').value = record.orderId ? `${record.orderId} - ${record.source}` : (record.source || '');
-            document.getElementById('returnProduct').value = productId;
-            fillVariantSelect(productId);
-            if (variantId) {
-                document.getElementById('returnVariant').value = variantId;
-            }
+            fillProductSelect(record.productId);
+            fillVariantSelect(record.productId, record.variantId);
             document.getElementById('returnQuantity').value = record.qty || 1;
             document.getElementById('returnReason').value = record.reason || '';
             document.getElementById('returnNote').value = record.note || '';
             document.getElementById('returnSubmitButton').textContent = 'Xác nhận nhập lại';
-            editingReturnId = returnId;
 
             EleganceApp.renderNotice(
                 'selectedReturnNotice',
-                `Đang xử lý phiếu ${returnId}. Bạn có thể chỉnh sửa thông tin trước khi xác nhận nhập lại.`,
+                `Đang xử lý phiếu ${record.returnId}. Bạn có thể chỉnh sửa số lượng trước khi xác nhận nhập lại.`,
                 'info'
             );
         }
 
         function renderCustomerReturns() {
-            const returns = EleganceApp.getDb().returns
-                .filter((item) => item.type === 'customer')
-                .slice(0, 10);
-
-            document.getElementById('customerReturnList').innerHTML = returns.map((item) => {
+            document.getElementById('customerReturnList').innerHTML = customerReturns.map((item) => {
                 const meta = getReturnStatusMeta(item.status);
                 const clickable = item.status !== 'completed' && item.status !== 'rejected';
 
@@ -205,120 +218,90 @@
                         ${clickable ? `onclick="selectReturnForReceive('${item.id}')"` : 'disabled'}
                     >
                         <div>
-                            <div class="font-semibold text-gray-900">${item.id} - ${item.productName}</div>
-                            <div class="text-sm text-gray-500 mt-1">${item.variantLabel || 'Chưa chọn biến thể'} • ${item.qty} sản phẩm • ${item.source}</div>
-                            ${clickable ? '<div class="text-xs text-[#a87b51] mt-2">Nhấn để điền thông tin và xác nhận nhập lại</div>' : ''}
+                            <div class="font-semibold text-gray-900">${item.returnId || item.id} - ${item.productName}</div>
+                            <div class="text-sm text-gray-500 mt-1">${item.variantLabel || 'Chưa chọn biến thể'} • ${item.qty} sản phẩm • ${item.source || '--'}</div>
+                            <div class="text-xs text-gray-400 mt-2">${item.orderId || 'Không gắn đơn'} • ${EleganceApp.formatDate(item.date)}</div>
                         </div>
                         <span class="badge ${meta.className}">${meta.label}</span>
                     </button>
                 `;
-            }).join('') || '<div class="empty-state">Chưa có phiếu đổi trả.</div>';
+            }).join('') || '<div class="empty-state">Chưa có phiếu đổi trả từ đơn hàng. Bạn vẫn có thể nhập thủ công ở form bên trái.</div>';
+        }
+
+        async function loadReturnData() {
+            [products, customerReturns] = await Promise.all([
+                apiGet('/inventory/products'),
+                apiGet('/inventory/customer-returns')
+            ]);
+
+            fillProductSelect(document.getElementById('returnProduct').value || products[0]?.id);
+            renderCustomerReturns();
         }
 
         window.selectReturnForReceive = selectReturnForReceive;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['WAREHOUSE'], '../auth/login.html');
             if (!user) return;
+
             document.getElementById('warehouseUserName').textContent = user.name;
             EleganceApp.hydrateUser('warehouseHeaderName', 'warehouseAvatar', user.name);
 
-            const productSelect = document.getElementById('returnProduct');
-            productSelect.innerHTML = EleganceApp.getDb().products.map((product) => `
-                <option value="${product.id}">${product.sku} - ${product.name}</option>
-            `).join('');
-            fillVariantSelect(productSelect.value);
-            renderCustomerReturns();
+            document.getElementById('returnProduct').addEventListener('change', (event) => {
+                fillVariantSelect(event.target.value);
+            });
 
-            productSelect.addEventListener('change', () => fillVariantSelect(productSelect.value));
             document.getElementById('resetReturnButton').addEventListener('click', resetReturnForm);
 
-            document.getElementById('customerReturnForm').addEventListener('submit', (event) => {
+            document.getElementById('customerReturnForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
+
+                const variantId = document.getElementById('returnVariant').value;
                 const quantity = document.getElementById('returnQuantity').value.trim();
-                if (!quantity || !/^\d+$/.test(quantity)) {
-                    EleganceApp.renderNotice('returnNotice', 'Số lượng nhận lại không được bỏ trống và phải là số nguyên hợp lệ.', 'error');
+                const source = document.getElementById('returnSource').value.trim();
+                const reason = document.getElementById('returnReason').value.trim();
+                const note = document.getElementById('returnNote').value.trim();
+
+                if (!variantId) {
+                    EleganceApp.renderNotice('returnNotice', 'Vui lòng chọn biến thể cần nhập lại.', 'error');
+                    return;
+                }
+
+                if (!/^[1-9]\d*$/.test(quantity)) {
+                    EleganceApp.renderNotice('returnNotice', 'Số lượng nhận lại phải là số nguyên lớn hơn 0.', 'error');
                     document.getElementById('returnQuantity').focus();
                     return;
                 }
 
-                const source = document.getElementById('returnSource').value.trim();
-                const reason = document.getElementById('returnReason').value.trim();
                 if (!source || !reason) {
                     EleganceApp.renderNotice('returnNotice', 'Vui lòng nhập thông tin khách hàng/mã đơn và lý do đổi trả.', 'error');
                     return;
                 }
 
                 try {
-                    const variantId = document.getElementById('returnVariant').value;
-                    const variant = EleganceApp.findVariantById(variantId);
-                    const product = EleganceApp.findProductById(variant.productId);
-                    const returnQty = Number(quantity);
-                    const note = document.getElementById('returnNote').value.trim();
-
-                    EleganceApp.updateDb((db) => {
-                        const targetVariant = db.inventoryVariants.find((item) => item.id === variantId);
-                        targetVariant.stock += returnQty;
-
-                        const targetProduct = db.products.find((item) => item.id === product.id);
-                        targetProduct.stock = db.inventoryVariants
-                            .filter((item) => item.productId === product.id)
-                            .reduce((sum, item) => sum + Number(item.stock || 0), 0);
-                        targetProduct.status = targetProduct.stock <= 10 ? 'low' : (targetProduct.status === 'draft' ? 'draft' : 'active');
-
-                        if (editingReturnId) {
-                            const targetReturn = db.returns.find((item) => item.id === editingReturnId && item.type === 'customer');
-                            if (!targetReturn) {
-                                throw new Error('Không tìm thấy phiếu đổi trả đang xử lý.');
-                            }
-
-                            targetReturn.source = source;
-                            targetReturn.productId = product.id;
-                            targetReturn.productName = product.name;
-                            targetReturn.variantId = variantId;
-                            targetReturn.variantLabel = EleganceApp.getVariantLabel(targetVariant);
-                            targetReturn.qty = returnQty;
-                            targetReturn.reason = reason;
-                            targetReturn.note = note;
-                            targetReturn.status = 'completed';
-                            targetReturn.staff = getCurrentStaffName();
-                            targetReturn.receivedDate = new Date().toISOString().slice(0, 10);
-
-                            if (targetReturn.orderId) {
-                                const targetOrder = db.orders.find((item) => item.id === targetReturn.orderId);
-                                if (targetOrder && targetOrder.status === 'return_requested') {
-                                    targetOrder.status = 'received';
-                                    targetOrder.note = note
-                                        ? `Kho đã nhận hàng đổi trả: ${note}`
-                                        : 'Kho đã xác nhận nhận hàng đổi trả.';
-                                }
-                            }
-                        } else {
-                            db.returns.unshift({
-                                id: `RTN-${String(db.returns.length + 1).padStart(4, '0')}`,
-                                type: 'customer',
-                                date: new Date().toISOString().slice(0, 10),
-                                source,
-                                productId: product.id,
-                                productName: product.name,
-                                variantId,
-                                variantLabel: EleganceApp.getVariantLabel(targetVariant),
-                                qty: returnQty,
-                                reason,
-                                note,
-                                status: 'completed',
-                                staff: getCurrentStaffName()
-                            });
-                        }
+                    await apiPost('/inventory/customer-returns/receive', {
+                        returnId: editingReturn?.returnId || null,
+                        variantId,
+                        quantity: Number(quantity),
+                        source,
+                        reason,
+                        note,
+                        userId: getCurrentUserId()
                     });
 
                     EleganceApp.renderNotice('returnNotice', 'Đã xác nhận nhận hàng đổi trả và cập nhật tồn kho.', 'success');
-                    renderCustomerReturns();
+                    await loadReturnData();
                     resetReturnForm();
                 } catch (error) {
                     EleganceApp.renderNotice('returnNotice', error.message, 'error');
                 }
             });
+
+            try {
+                await loadReturnData();
+            } catch (error) {
+                EleganceApp.renderNotice('returnNotice', error.message || 'Không tải được dữ liệu đổi trả.', 'error');
+            }
         });
     </script>
 </body>

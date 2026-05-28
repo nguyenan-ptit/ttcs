@@ -1,5 +1,5 @@
 (function () {
-    const DB_KEY = 'elegance_mock_db_v4';
+    const DB_KEY = 'elegance_mock_db_v5';
     const PASSWORD_KEY = 'elegance_password_overrides';
     const ACCOUNT_KEY = 'elegance_account_overrides';
 
@@ -96,7 +96,7 @@
                 phone: '0909123456',
                 address: '42 Trung Hòa, Hà Nội',
                 date: '2026-05-02',
-                status: 'shipping',
+                status: 'completed',
                 payment: 'COD',
                 channel: 'Website',
                 note: '',
@@ -130,6 +130,7 @@
                 status: 'cancelled',
                 payment: 'E-Wallet',
                 channel: 'Website',
+                cancelReason: 'Khách yêu cầu hủy',
                 note: 'Khách đổi mẫu, yêu cầu hủy.',
                 items: [
                     { productId: 'PRD-002', name: 'Quần Jean Slim Fit', qty: 1, price: 550000, color: 'Xanh đậm', size: '29' }
@@ -218,7 +219,8 @@
                 id: 'RTN-0001',
                 type: 'customer',
                 date: '2026-05-02',
-                source: 'Lê Minh Châu',
+                source: 'Trần Thị Mai',
+                orderId: 'ORD-102389',
                 productId: 'PRD-003',
                 productName: 'Chân váy midi lụa mềm',
                 variantId: 'VAR-009',
@@ -226,7 +228,7 @@
                 qty: 1,
                 reason: 'Không vừa size',
                 note: 'Khách muốn đổi sang size M.',
-                status: 'processing',
+                status: 'pending',
                 staff: 'Trần Anh Tuấn'
             },
             {
@@ -245,6 +247,7 @@
                 staff: 'Phạm Minh Hiếu'
             }
         ],
+
         storeInfo: {
             name: 'Elegance Cầu Giấy',
             manager: 'Lê Thị Lan',
@@ -258,6 +261,60 @@
             description: 'Cửa hàng thời trang tập trung vào dòng sản phẩm smart casual, công sở và capsule collection theo mùa.'
         }
     };
+
+    const TEST_ORDERS = [
+        {
+            id: 'ORD-TEST002',
+            customerId: 'CUS-02',
+            customerName: 'Trần Thị Mai',
+            phone: '0988777666',
+            address: '58 Nguyễn Chí Thanh, Hà Nội',
+            date: '2026-05-05',
+            status: 'new',
+            payment: 'COD',
+            channel: 'Website',
+            note: 'Đơn mẫu chờ xác nhận để kiểm thử luồng nhân viên bán hàng.',
+            items: [
+                { productId: 'PRD-002', name: 'Quần Jean Slim Fit', qty: 1, price: 550000, color: 'Xanh đậm', size: '30' },
+                { productId: 'PRD-006', name: 'Áo thun essential', qty: 2, price: 220000, color: 'Trắng', size: 'M' }
+            ]
+        },
+        {
+            id: 'ORD-TEST001',
+            customerId: 'CUS-03',
+            customerName: 'Lê Minh Châu',
+            phone: '0909123456',
+            address: '42 Trung Hòa, Hà Nội',
+            date: '2026-05-05',
+            status: 'completed',
+            payment: 'COD',
+            channel: 'Website',
+            note: 'Đơn mẫu để kiểm thử tra cứu, chi tiết đơn hàng và xử lý đổi trả.',
+            items: [
+                { productId: 'PRD-001', name: 'Áo Sơ Mi Trắng Oxford', qty: 1, price: 350000, color: 'Trắng', size: 'L' },
+                { productId: 'PRD-003', name: 'Chân váy midi lụa mềm', qty: 1, price: 549000, color: 'Be', size: 'S' }
+            ]
+        }
+    ];
+
+    const TEST_RETURNS = [
+        {
+            id: 'RTN-TEST001',
+            type: 'customer',
+            date: '2026-05-05',
+            source: 'Lê Minh Châu',
+            orderId: 'ORD-TEST001',
+            productId: 'PRD-001',
+            productName: 'Áo Sơ Mi Trắng Oxford',
+            variantId: 'VAR-002',
+            variantLabel: 'Trắng / L',
+            qty: 1,
+            reason: 'Không vừa size',
+            note: 'Phiếu mẫu để kiểm thử danh sách đổi trả.',
+            status: 'pending',
+            staff: 'Nhân viên sale'
+        }
+    ];
 
     function deepClone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -279,9 +336,91 @@
             .replace(/'/g, '&#039;');
     }
 
+    function ensureTestOrders(db) {
+        if (!db) return db;
+        if (!Array.isArray(db.orders)) {
+            db.orders = [];
+        }
+
+        TEST_ORDERS.forEach((order) => {
+            if (!db.orders.some((item) => item.id === order.id)) {
+                db.orders.unshift(deepClone(order));
+            }
+        });
+
+        return db;
+    }
+
+    function normalizeOrderStatuses(db) {
+        if (!db || !Array.isArray(db.orders)) return db;
+
+        db.orders.forEach((order) => {
+            if (order.status === 'preparing') {
+                order.status = 'shipping';
+            }
+            if (order.id === 'ORD-102377' && order.status === 'shipping') {
+                order.status = 'completed';
+                order.note = order.note || 'Đơn hàng đã giao thành công.';
+            }
+        });
+
+        return db;
+    }
+
+    function ensureTestReturns(db) {
+        if (!db) return db;
+        if (!Array.isArray(db.returns)) {
+            db.returns = [];
+        }
+
+        const defaultReturnFixes = {
+            'RTN-0001': {
+                source: 'Trần Thị Mai',
+                orderId: 'ORD-102389',
+                variantLabel: 'Be / S'
+            }
+        };
+
+        db.returns = db.returns.map((item) => {
+            if (!defaultReturnFixes[item.id]) return item;
+            return { ...item, ...defaultReturnFixes[item.id] };
+        });
+
+        TEST_RETURNS.forEach((item) => {
+            const existingIndex = db.returns.findIndex((entry) => entry.id === item.id);
+            if (existingIndex === -1) {
+                db.returns.unshift(deepClone(item));
+                return;
+            }
+
+            db.returns[existingIndex] = { ...deepClone(item), ...db.returns[existingIndex] };
+        });
+
+        return db;
+    }
+
     function seedDb() {
         if (!localStorage.getItem(DB_KEY)) {
-            localStorage.setItem(DB_KEY, JSON.stringify(DEFAULT_DB));
+            const seededDb = deepClone(DEFAULT_DB);
+            ensureTestOrders(seededDb);
+            ensureTestReturns(seededDb);
+            normalizeOrderStatuses(seededDb);
+            localStorage.setItem(DB_KEY, JSON.stringify(seededDb));
+            return;
+        }
+
+        try {
+            const existingDb = JSON.parse(localStorage.getItem(DB_KEY));
+            ensureTestOrders(existingDb);
+            ensureTestReturns(existingDb);
+            normalizeOrderStatuses(existingDb);
+            localStorage.setItem(DB_KEY, JSON.stringify(existingDb));
+        } catch (error) {
+            const seededDb = deepClone(DEFAULT_DB);
+            ensureTestOrders(seededDb);
+            ensureTestReturns(seededDb);
+            normalizeOrderStatuses(seededDb);
+            localStorage.setItem(DB_KEY, JSON.stringify(seededDb));
         }
     }
 
@@ -595,16 +734,21 @@
 
     function orderStatusMeta(status) {
         const map = {
+            PENDING: { label: 'Chờ xác nhận', className: 'badge-info' },
+            CONFIRMED: { label: 'Đã xác nhận', className: 'badge-gold' },
+            SHIPPING: { label: 'Đang giao', className: 'badge-warning' },
+            DELIVERED: { label: 'Giao thành công', className: 'badge-success' },
+            DELIVERY_FAILED: { label: 'Giao thất bại', className: 'badge-danger' },
+            CANCELLED: { label: 'Đã hủy', className: 'badge-danger' },
+
             new: { label: 'Chờ xác nhận', className: 'badge-info' },
-            preparing: { label: 'Đang chuẩn bị hàng', className: 'badge-gold' },
             confirmed: { label: 'Đã xác nhận', className: 'badge-gold' },
             shipping: { label: 'Đang giao', className: 'badge-warning' },
-            completed: { label: 'Hoàn tất', className: 'badge-success' },
-            cancelled: { label: 'Đã hủy', className: 'badge-danger' },
-            return_requested: { label: 'Yêu cầu trả', className: 'badge-dark' },
-            processing: { label: 'Đang xử lý', className: 'badge-warning' },
-            received: { label: 'Đã nhập kho', className: 'badge-success' }
+            completed: { label: 'Giao thành công', className: 'badge-success' },
+            delivery_failed: { label: 'Giao thất bại', className: 'badge-danger' },
+            cancelled: { label: 'Đã hủy', className: 'badge-danger' }
         };
+
         return map[status] || { label: status || 'Không rõ', className: 'badge-dark' };
     }
 
@@ -838,10 +982,18 @@
         return completed;
     }
 
-    function applyUiConfig() {
-        const { uiConfig } = getDb();
+    async function applyUiConfig() {
+
         const topBar = document.getElementById('topBar');
         const banner = document.getElementById('mainBanner');
+        let uiConfig = getDb().uiConfig;
+        if (typeof apiGet === 'function') {
+            try {
+                uiConfig = await apiGet('/site-settings/ui');
+            } catch (error) {
+                console.error('Không thể tải cấu hình giao diện từ API:', error);
+            }
+        }
 
         if (topBar) {
             topBar.textContent = uiConfig.topBarText;
@@ -922,6 +1074,10 @@
         const panel = accountArea.querySelector('[data-account-panel]');
         toggle?.addEventListener('click', (event) => {
             event.stopPropagation();
+            if (!isLoggedIn) {
+                window.location.href = loginPath;
+                return;
+            }
             panel.classList.toggle('hidden');
         });
         accountArea.querySelector('[data-account-logout]')?.addEventListener('click', () => {

@@ -23,14 +23,13 @@
             <a href="../category/category-list.html" class="sidebar-link"><span>Quản lý danh mục</span></a>
             <a href="../product/product-list.html" class="sidebar-link"><span>Quản lý sản phẩm</span></a>
             <a href="promotion-list.html" class="sidebar-link active"><span>Quản lý khuyến mãi</span></a>
-            <a href="../report/report.html" class="sidebar-link"><span>Báo cáo thống kê</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
                 <div class="text-xs uppercase text-white/45">Quản lý</div>
-                <div id="managerSidebarName" class="mt-2 font-semibold">Lê Thị Lan</div>
+                <div id="managerSidebarName" class="mt-2 font-semibold">Quản lý</div>
             </div>
-            <button onclick="logout()" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
+            <button onclick="EleganceApp.logout('../../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
         </div>
     </aside>
 
@@ -120,9 +119,10 @@
             </form>
         </div>
     </div>
-
+    <script src="../../../assets/js/api.js"></script>
     <script src="../../../assets/js/main.js"></script>
     <script>
+        let promotions = [];
         const statusMap = {
             active: { label: 'Đang chạy', className: 'badge-success' },
             scheduled: { label: 'Lên lịch', className: 'badge-info' },
@@ -136,8 +136,8 @@
         }
 
         function renderPromotionTable() {
-            const db = EleganceApp.getDb();
-            document.getElementById('promotionTable').innerHTML = db.promotions.map((promotion) => {
+
+                document.getElementById('promotionTable').innerHTML = promotions.map((promotion) => {
                 const meta = statusMap[promotion.status] || statusMap.ended;
                 return `
                     <tr>
@@ -150,16 +150,41 @@
                         <td>
                             <div class="flex flex-wrap gap-3">
                                 <button onclick="openPromotionForm('${promotion.id}')" class="text-[#a87b51] font-medium">Sửa</button>
-                                <button onclick="deletePromotion('${promotion.id}')" class="text-red-600 font-medium">Xóa</button>
+                                <button onclick="hidePromotion('${promotion.id}')" class="text-amber-700 font-medium">Ẩn</button>
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('') || '<tr><td colspan="7" class="empty-state">Chưa có chương trình khuyến mãi.</td></tr>';
         }
+        async function hidePromotion(promotionId) {
+            if (!confirm('Bạn chắc chắn muốn ẩn chương trình khuyến mãi này?')) return;
 
+            try {
+                await apiPatch(`/promotions/${promotionId}/status`, {
+                    status: 'ended'
+                });
+
+                EleganceApp.renderNotice('promotionNotice', 'Đã ẩn chương trình khuyến mãi.', 'success');
+                await loadPromotions();
+            } catch (error) {
+                EleganceApp.renderNotice(
+                    'promotionNotice',
+                    error.message || 'Không thể ẩn khuyến mãi.',
+                    'error'
+                );
+            }
+        }
+        async function loadPromotions() {
+            try {
+                promotions = await apiGet('/promotions');
+                renderPromotionTable();
+            } catch (error) {
+                EleganceApp.renderNotice('promotionNotice', error.message || 'Không thể tải danh sách khuyến mãi.', 'error');
+            }
+        }
         function openPromotionForm(promotionId) {
-            const promotion = promotionId ? EleganceApp.getDb().promotions.find((item) => item.id === promotionId) : null;
+            const promotion = promotionId ? promotions.find((item) => item.id === promotionId) : null;
             document.getElementById('promotionModalTitle').textContent = promotion ? 'Sửa khuyến mãi' : 'Thêm khuyến mãi';
             document.getElementById('promotionId').value = promotion?.id || '';
             document.getElementById('promotionName').value = promotion?.name || '';
@@ -178,20 +203,14 @@
             document.getElementById('promotionModal').classList.remove('flex');
         }
 
-        function deletePromotion(promotionId) {
-            if (!confirm('Bạn chắc chắn muốn xóa chương trình khuyến mãi này?')) return;
-            EleganceApp.updateDb((db) => {
-                db.promotions = db.promotions.filter((item) => item.id !== promotionId);
-            });
-            EleganceApp.renderNotice('promotionNotice', 'Đã xóa chương trình khuyến mãi.', 'success');
-            renderPromotionTable();
-        }
+
 
         document.addEventListener('DOMContentLoaded', () => {
             const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
             if (!user) return;
+            document.getElementById('managerSidebarName').textContent = user.name;
 
-            document.getElementById('promotionForm').addEventListener('submit', (event) => {
+            document.getElementById('promotionForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const id = document.getElementById('promotionId').value;
                 const payload = {
@@ -204,25 +223,32 @@
                     status: document.getElementById('promotionStatus').value
                 };
 
-                EleganceApp.updateDb((db) => {
-                    if (id) {
-                        const target = db.promotions.find((item) => item.id === id);
-                        Object.assign(target, payload);
-                    } else {
-                        db.promotions.push({
-                            id: `PRM-${String(db.promotions.length + 1).padStart(2, '0')}`,
-                            ...payload
-                        });
-                    }
-                });
+                try {
+                if (id) {
+                    await apiPut(`/promotions/${id}`, payload);
+                } else {
+                    await apiPost('/promotions', payload);
+                }
 
                 closePromotionForm();
-                EleganceApp.renderNotice('promotionNotice', id ? 'Đã cập nhật khuyến mãi.' : 'Đã thêm khuyến mãi mới.', 'success');
-                renderPromotionTable();
-            });
+                EleganceApp.renderNotice(
+                    'promotionNotice',
+                    id ? 'Đã cập nhật khuyến mãi.' : 'Đã thêm khuyến mãi mới.',
+                    'success'
+                );
 
-            renderPromotionTable();
-        });
+                await loadPromotions();
+        } catch (error) {
+            EleganceApp.renderNotice(
+                'promotionNotice',
+                error.message || 'Không thể lưu khuyến mãi.',
+                'error'
+            );
+        }
+    });
+
+            loadPromotions();
+});
     </script>
 </body>
 

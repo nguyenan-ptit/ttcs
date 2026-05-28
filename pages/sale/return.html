@@ -20,17 +20,17 @@
     <aside class="dashboard-sidebar">
         <div class="dashboard-brand">
             <a href="order-list.html" class="dashboard-brand-mark">ÉLÉGANCE</a>
-            <div class="dashboard-brand-subtitle">B&#7843;ng &#273;i&#7873;u h&#224;nh b&#225;n h&#224;ng</div>
+            <div class="dashboard-brand-subtitle">Bảng điều hành bán hàng</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="sidebar-section-title">Menu ch&#237;nh</div>
+            <div class="sidebar-section-title">Menu chính</div>
             <a href="order-list.html" class="sidebar-link"><span>Quản lý đơn hàng</span></a>
             <a href="return.html" class="sidebar-link active"><span>Xử lý đổi trả</span></a>
             <a href="feedback.html" class="sidebar-link"><span>Phản hồi đánh giá</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
-                <div class="text-xs uppercase text-white/45">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</div>
+                <div class="text-xs uppercase text-white/45">Nhân viên bán hàng</div>
                 <div id="saleUserName" class="mt-2 font-semibold">Nhân viên sale</div>
             </div>
             <button onclick="EleganceApp.logout('../auth/login.html')" class="btn-ghost mt-4 text-white/80">Đăng xuất</button>
@@ -41,11 +41,11 @@
         <header class="dashboard-header">
             <div>
                 <h1 class="dashboard-header-title">Xử lý đổi trả</h1>
-                <p class="dashboard-header-copy">Nhập mã đơn hàng khách yêu cầu đổi trả để tra cứu, sau đó duyệt hoặc từ chối.</p>
+                <p class="dashboard-header-copy">Tra cứu đơn hàng, duyệt yêu cầu và theo dõi danh sách đổi trả của khách.</p>
             </div>
             <div class="dashboard-header-actions">
                 <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-500">Xin ch&#224;o, <b id="saleHeaderName">Nh&#226;n vi&#234;n b&#225;n h&#224;ng</b></span>
+                    <span class="text-sm text-gray-500">Xin chào, <b id="saleHeaderName">Nhân viên bán hàng</b></span>
                     <div id="saleAvatar" class="dashboard-avatar">S</div>
                 </div>
             </div>
@@ -63,14 +63,14 @@
                         <form id="returnSearchForm" class="stack">
                             <div>
                                 <label class="form-label" for="returnOrderCode">Mã đơn hàng</label>
-                                <input id="returnOrderCode" class="form-input" type="text" placeholder="Ví dụ: ORD-102341">
+                                <input id="returnOrderCode" class="form-input" type="text" placeholder="Ví dụ: ORD-1">
                             </div>
                             <div class="flex justify-end">
                                 <button class="btn-primary" type="submit">Tìm kiếm</button>
                             </div>
                         </form>
                         <div class="notice">
-                            Chỉ nên duyệt đổi trả với đơn đã xác nhận, đang giao hoặc hoàn tất. Đơn đã hủy không đủ điều kiện xử lý.
+                            Sale chỉ duyệt hoặc từ chối yêu cầu đổi trả. Kho sẽ nhận hàng thực tế và cập nhật tồn kho ở bước sau.
                         </div>
                     </div>
                 </section>
@@ -127,47 +127,109 @@
             <section class="surface-card mt-8">
                 <div class="surface-card-header">
                     <div>
-                        <div class="eyebrow">Lịch sử</div>
-                        <h2 class="section-title">Phiếu đổi trả gần đây</h2>
+                        <div class="eyebrow">Danh sách</div>
+                        <h2 class="section-title">Danh sách sản phẩm đổi trả</h2>
                     </div>
                 </div>
-                <div id="saleReturnList" class="surface-card-body quick-list"></div>
+                <div class="surface-card-body">
+                    <div class="toolbar">
+                        <div class="toolbar-group flex-1">
+                            <input id="returnListKeyword" class="form-input max-w-md" type="text"
+                                placeholder="Tìm mã phiếu, mã đơn, khách hàng, sản phẩm, biến thể hoặc lý do">
+                        </div>
+                        <div class="text-sm text-gray-500">Nhấn vào mã đơn để xem chi tiết và xử lý.</div>
+                    </div>
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã phiếu</th>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Sản phẩm</th>
+                                    <th>Biến thể</th>
+                                    <th>SL</th>
+                                    <th>Lý do</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="saleReturnTable"></tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
         </div>
     </main>
 
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
         let selectedOrder = null;
+        let customerReturns = [];
 
-        function getStaffName() {
-            return EleganceApp.getCurrentUser()?.name || 'Nhân viên sale';
+        function getReturnStatusMeta(status) {
+            const map = {
+                pending: { className: 'badge-info', label: 'Chờ xác nhận' },
+                approved: { className: 'badge-warning', label: 'Đã duyệt' },
+                processing: { className: 'badge-gold', label: 'Đang xử lý' },
+                completed: { className: 'badge-success', label: 'Đã nhập kho' },
+                rejected: { className: 'badge-danger', label: 'Từ chối' }
+            };
+
+            return map[status] || { className: 'badge-dark', label: status || 'Không rõ' };
         }
 
-        function renderReturnList() {
-            const returns = EleganceApp.getDb().returns.filter((item) => item.type === 'customer').slice(0, 8);
-            document.getElementById('saleReturnList').innerHTML = returns.map((item) => {
-                const approved = item.status === 'approved' || item.status === 'processing' || item.status === 'completed';
+        async function loadReturns() {
+            customerReturns = await apiGet('/returns');
+            renderReturnTable();
+        }
+
+        function renderReturnTable() {
+            const keyword = EleganceApp.normalizeText(document.getElementById('returnListKeyword')?.value || '');
+            const returns = customerReturns.filter((item) => {
+                return !keyword ||
+                    EleganceApp.normalizeText(item.id).includes(keyword) ||
+                    EleganceApp.normalizeText(item.orderId).includes(keyword) ||
+                    EleganceApp.normalizeText(item.source).includes(keyword) ||
+                    EleganceApp.normalizeText(item.productName).includes(keyword) ||
+                    EleganceApp.normalizeText(item.variantLabel).includes(keyword) ||
+                    EleganceApp.normalizeText(item.reason).includes(keyword);
+            });
+
+            document.getElementById('saleReturnTable').innerHTML = returns.map((item) => {
+                const meta = getReturnStatusMeta(item.status);
+                const canOpen = item.status !== 'completed';
+
                 return `
-                    <div class="quick-list-item">
-                        <div>
-                            <div class="font-semibold text-gray-900">${item.id} - ${item.source}</div>
-                            <div class="text-sm text-gray-500 mt-1">${item.productName} • ${item.reason}</div>
-                        </div>
-                        <span class="badge ${approved ? 'badge-warning' : 'badge-danger'}">${item.status === 'rejected' ? 'Từ chối' : 'Đã duyệt'}</span>
-                    </div>
+                    <tr>
+                        <td class="font-semibold text-gray-900">${item.id}</td>
+                        <td>
+                            ${item.orderId && canOpen
+                                ? `<button type="button" class="text-[#a87b51] font-semibold hover:text-[#8b633f]" onclick="focusOrderReturn('${item.orderId}')">${item.orderId}</button>`
+                                : (item.orderId || '--')}
+                        </td>
+                        <td>${item.source || '--'}</td>
+                        <td class="max-w-[260px] whitespace-normal break-words">${item.productName || '--'}</td>
+                        <td>${item.variantLabel || '--'}</td>
+                        <td>${item.qty || '--'}</td>
+                        <td class="max-w-[220px] whitespace-normal break-words">${item.reason || '--'}</td>
+                        <td>${EleganceApp.formatDate(item.date)}</td>
+                        <td><span class="badge ${meta.className}">${meta.label}</span></td>
+                    </tr>
                 `;
-            }).join('') || '<div class="empty-state">Chưa có phiếu đổi trả.</div>';
+            }).join('') || '<tr><td colspan="9" class="empty-state">Chưa có sản phẩm đổi trả.</td></tr>';
         }
 
         function renderReturnOrder(order) {
             selectedOrder = order;
             const meta = EleganceApp.orderStatusMeta(order.status);
+
             document.getElementById('returnEmptyState').classList.add('hidden');
             document.getElementById('returnDetailPanel').classList.remove('hidden');
             document.getElementById('returnOrderTitle').textContent = order.id;
             document.getElementById('returnOrderMeta').textContent =
-                `${order.customerName} • ${EleganceApp.formatCurrency(EleganceApp.getOrderTotal(order))} • ${meta.label}`;
+                `${order.customerName} • ${EleganceApp.formatCurrency(order.totalAmount)} • ${meta.label}`;
             document.getElementById('returnItemsTable').innerHTML = order.items.map((item) => `
                 <tr>
                     <td class="font-semibold text-gray-900">${item.name}</td>
@@ -176,50 +238,71 @@
                     <td>${EleganceApp.formatCurrency(item.price * item.qty)}</td>
                 </tr>
             `).join('');
+
             EleganceApp.hideNotice('returnActionNotice');
         }
 
-        function createReturn(status) {
-            if (!selectedOrder) return;
+        async function createReturn(decision) {
+            if (!selectedOrder) {
+                return;
+            }
+
             const reason = document.getElementById('returnReason').value;
             const note = document.getElementById('returnNote').value.trim();
 
-            EleganceApp.updateDb((db) => {
-                db.returns.unshift({
-                    id: `RTN-${String(db.returns.length + 1).padStart(4, '0')}`,
-                    type: 'customer',
-                    date: new Date().toISOString().slice(0, 10),
-                    source: selectedOrder.customerName,
+            try {
+                await apiPost('/returns', {
                     orderId: selectedOrder.id,
-                    productId: selectedOrder.items[0].productId,
-                    productName: selectedOrder.items[0].name,
-                    qty: selectedOrder.items[0].qty,
                     reason,
                     note,
-                    status,
-                    staff: getStaffName()
+                    decision
                 });
-                const order = db.orders.find((item) => item.id === selectedOrder.id);
-                if (order && status === 'approved') {
-                    order.status = 'return_requested';
-                    order.note = note ? `Đã duyệt đổi trả: ${note}` : `Đã duyệt đổi trả: ${reason}`;
-                }
-            });
 
-            EleganceApp.renderNotice(
-                'returnActionNotice',
-                status === 'approved' ? 'Đã duyệt yêu cầu đổi trả.' : 'Đã từ chối yêu cầu đổi trả.',
-                status === 'approved' ? 'success' : 'info'
-            );
-            renderReturnList();
+                EleganceApp.renderNotice(
+                    'returnActionNotice',
+                    decision === 'approved'
+                        ? 'Đã duyệt yêu cầu đổi trả. Kho có thể nhận hàng ở màn hình kho.'
+                        : 'Đã từ chối yêu cầu đổi trả.',
+                    decision === 'approved' ? 'success' : 'info'
+                );
+
+                await loadReturns();
+            } catch (error) {
+                EleganceApp.renderNotice('returnActionNotice', error.message, 'error');
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        async function searchOrderForReturn(orderCode) {
+            const normalized = String(orderCode || '').trim().toUpperCase();
+
+            if (!normalized) {
+                EleganceApp.renderNotice('returnSearchNotice', 'Vui lòng nhập mã đơn hàng cần xử lý đổi trả.', 'error');
+                return;
+            }
+
+            try {
+                const order = await apiGet(`/returns/orders/${normalized}`);
+                EleganceApp.hideNotice('returnSearchNotice');
+                renderReturnOrder(order);
+            } catch (error) {
+                EleganceApp.renderNotice('returnSearchNotice', error.message, 'error');
+            }
+        }
+
+        function focusOrderReturn(orderId) {
+            document.getElementById('returnOrderCode').value = orderId;
+            searchOrderForReturn(orderId);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.focusOrderReturn = focusOrderReturn;
+
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['SALE'], '../auth/login.html');
             if (!user) return;
+
             document.getElementById('saleUserName').textContent = user.name;
             EleganceApp.hydrateUser('saleHeaderName', 'saleAvatar', user.name);
-            renderReturnList();
 
             const preselected = new URLSearchParams(window.location.search).get('id');
             if (preselected) {
@@ -228,35 +311,26 @@
 
             document.getElementById('returnSearchForm').addEventListener('submit', (event) => {
                 event.preventDefault();
-                const orderCode = document.getElementById('returnOrderCode').value.trim().toUpperCase();
-                if (!orderCode) {
-                    EleganceApp.renderNotice('returnSearchNotice', 'Vui lòng nhập mã đơn hàng cần xử lý đổi trả.', 'error');
-                    return;
-                }
-
-                const order = EleganceApp.getDb().orders.find((item) => item.id.toUpperCase() === orderCode);
-                if (!order) {
-                    EleganceApp.renderNotice('returnSearchNotice', 'Không tìm thấy đơn hàng theo mã đã nhập.', 'error');
-                    return;
-                }
-                if (order.status === 'cancelled') {
-                    EleganceApp.renderNotice('returnSearchNotice', 'Đơn đã hủy không đủ điều kiện đổi trả.', 'error');
-                    return;
-                }
-
-                EleganceApp.hideNotice('returnSearchNotice');
-                renderReturnOrder(order);
+                searchOrderForReturn(document.getElementById('returnOrderCode').value);
             });
-
-            if (preselected) {
-                document.getElementById('returnSearchForm').dispatchEvent(new Event('submit'));
-            }
 
             document.getElementById('returnDecisionForm').addEventListener('submit', (event) => {
                 event.preventDefault();
                 createReturn('approved');
             });
+
             document.getElementById('rejectReturnButton').addEventListener('click', () => createReturn('rejected'));
+            document.getElementById('returnListKeyword').addEventListener('input', renderReturnTable);
+
+            try {
+                await loadReturns();
+
+                if (preselected) {
+                    await searchOrderForReturn(preselected);
+                }
+            } catch (error) {
+                EleganceApp.renderNotice('returnSearchNotice', error.message || 'Không tải được dữ liệu đổi trả.', 'error');
+            }
         });
     </script>
 </body>

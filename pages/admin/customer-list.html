@@ -91,9 +91,6 @@
                     </svg>
                 </div>
 
-                <div class="text-sm text-gray-500 italic">
-                    * Admin chỉ có quyền Khóa hoặc Xóa tài khoản khách hàng.
-                </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -114,17 +111,16 @@
 
         </div>
     </main>
-
+    <script src="../../assets/js/api.js"></script>
     <script>
         // Mock data: Chỉ chứa danh sách Khách hàng (Role = CUSTOMER)
-        let mockCustomers = [
-            { id: 5, username: 'khach_hang1', fullName: 'Hoàng Văn Nam', role: 'CUSTOMER', status: 'Active' },
-            { id: 6, username: 'khach_hang2', fullName: 'Trần Thị Mai', role: 'CUSTOMER', status: 'Active' },
-            { id: 7, username: 'spam_user99', fullName: 'Nguyễn Văn Spam', role: 'CUSTOMER', status: 'Locked' }
-        ];
-
+        let customers = [];
+        async function loadCustomers() {
+            customers = await apiGet('/users?type=customer');
+            renderTable(customers);
+        }
         // Render bảng
-        function renderCustomerTable(data) {
+        function renderTable(data) {
             const tbody = document.getElementById('customerTableBody');
             tbody.innerHTML = '';
 
@@ -134,7 +130,7 @@
             }
 
             data.forEach((user) => {
-                const statusBadge = user.status === 'Active'
+                const statusBadge = user.status === 'active'
                     ? `<span class="text-green-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-green-500"></div> Hoạt động</span>`
                     : `<span class="text-red-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div> Đã khóa</span>`;
 
@@ -145,12 +141,10 @@
                         <td class="px-6 py-4 text-gray-600">${user.fullName}</td>
                         <td class="px-6 py-4 font-medium text-sm">${statusBadge}</td>
                         <td class="px-6 py-4 text-right space-x-4 text-sm">
-                            <button onclick="toggleLock(${user.id}, '${user.status}')" class="text-[#a87b51] hover:text-[#8b633f] font-medium transition">
-                                ${user.status === 'Active' ? 'Khóa' : 'Mở khóa'}
+                            <button onclick="toggleLock(${user.userId}, '${user.status}')" class="text-[#a87b51] hover:text-[#8b633f] font-medium transition">
+                                ${user.status === 'active' ? 'Khóa' : 'Mở khóa'}
                             </button>
-                            <button onclick="deleteCustomer(${user.id})" class="text-red-500 hover:text-red-700 font-medium transition">
-                                Xóa
-                            </button>
+
                         </td>
                     </tr>
                 `;
@@ -158,23 +152,21 @@
         }
 
         // Xử lý nút Khóa/Mở Khóa
-        function toggleLock(id, currentStatus) {
-            const actionText = currentStatus === 'Active' ? 'khóa' : 'mở khóa';
-            if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản khách hàng này không?`)) {
-                const userIndex = mockCustomers.findIndex(u => u.id === id);
-                mockCustomers[userIndex].status = currentStatus === 'Active' ? 'Locked' : 'Active';
-                renderCustomerTable(mockCustomers);
+        async function toggleLock(id, currentStatus) {
+            const nextIsActive = currentStatus !== 'active';
+            const actionText = currentStatus === 'active' ? 'khóa' : 'mở khóa';
+
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản khách hàng này không?`)) {
+                return;
             }
+
+            await apiPatch(`/users/${id}/status`, {
+                isActive: nextIsActive
+            });
+
+            await loadCustomers();
         }
 
-        // Xử lý nút Xóa
-        function deleteCustomer(id) {
-            if (confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN khách hàng này khỏi hệ thống không? Hành động này không thể hoàn tác!`)) {
-                // Lọc bỏ user có id trùng khớp (Mock xóa)
-                mockCustomers = mockCustomers.filter(u => u.id !== id);
-                renderCustomerTable(mockCustomers);
-            }
-        }
 
         // Xử lý tìm kiếm
         document.getElementById('searchCustomer').addEventListener('input', function (e) {
@@ -183,7 +175,7 @@
                 u.username.toLowerCase().includes(keyword) ||
                 u.fullName.toLowerCase().includes(keyword)
             );
-            renderCustomerTable(filtered);
+            renderTable(filtered);
         });
 
         // Xử lý đăng xuất
@@ -198,7 +190,7 @@
             if (currentUser && currentUser.name) {
                 document.getElementById('adminNameDisplay').innerText = currentUser.name;
             }
-            renderCustomerTable(mockCustomers);
+            loadCustomers();
         });
     </script>
 </body>

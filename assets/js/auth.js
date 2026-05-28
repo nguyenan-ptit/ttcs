@@ -1,63 +1,64 @@
 // assets/js/auth.js
 
-document.getElementById('loginForm')?.addEventListener('submit', function (e) {
-    e.preventDefault(); // Ngăn chặn hành vi reload trang mặc định của form
+const API_BASE = 'http://localhost:3000/api';
 
-    // Lấy dữ liệu người dùng nhập
+document.getElementById('loginForm')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
     const usernameInput = document.getElementById('username').value.trim();
     const passwordInput = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('loginError');
 
-    // Dữ liệu giả lập (Mock Data) dựa trên database (bảng users và roles) 
-    const mockUsers = [
-        { username: 'admin_thanh', password: 'admin123', role: 'ADMIN', name: 'Nguyễn Duy Thành' },
-        { username: 'manager_lan', password: '123456', role: 'MANAGER', name: 'Lê Thị Lan' },
-        { username: 'sale_tuan', password: '123456', role: 'SALE', name: 'Trần Anh Tuấn' },
-        { username: 'kho_hieu', password: '123456', role: 'WAREHOUSE', name: 'Phạm Minh Hiếu' },
-        { username: 'khach_hang1', password: 'khach123', role: 'CUSTOMER', name: 'Hoàng Văn Nam' }
-    ];
+    try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: usernameInput,
+                password: passwordInput
+            })
+        });
 
-    // Tìm user khớp với thông tin nhập vào
-    const passwordOverrides = JSON.parse(localStorage.getItem('elegance_password_overrides') || '{}');
-    const accountOverrides = JSON.parse(localStorage.getItem('elegance_account_overrides') || '{}');
-    const user = mockUsers.find((u) => {
-        const activePassword = passwordOverrides[u.username] || u.password;
-        return u.username === usernameInput && activePassword === passwordInput;
-    });
+        const data = await response.json();
 
-    if (user) {
-        // Đăng nhập thành công: Giấu thông báo lỗi
-        errorDiv.classList.add('d-none');
+        if (!response.ok) {
+            throw new Error(data.message || 'Dang nhap that bai');
+        }
 
-        // Lưu thông tin người dùng vào Local Storage để các trang khác sử dụng
+        localStorage.setItem('authToken', data.token);
         localStorage.setItem('currentUser', JSON.stringify({
-            ...user,
-            name: accountOverrides[user.username]?.name || user.name,
-            password: passwordOverrides[user.username] || user.password
+            userId: data.user.userId,
+            username: data.user.username,
+            name: data.user.name,
+            role: data.user.role
         }));
 
-        // Điều hướng dựa trên role (quyền) 
-        switch (user.role) {
+        errorDiv.classList.add('d-none');
+
+        switch (data.user.role) {
             case 'ADMIN':
-                window.location.href = '../admin/user-list.html'; // [cite: 211]
+                window.location.href = '../admin/user-list.html';
                 break;
             case 'MANAGER':
-                window.location.href = '../manager/dashboard.html'; // [cite: 212]
+                window.location.href = '../manager/dashboard.html';
                 break;
             case 'WAREHOUSE':
-                window.location.href = '../warehouse/import.html'; // [cite: 212]
+                window.location.href = '../warehouse/import.html';
                 break;
             case 'SALE':
-                window.location.href = '../sale/order-list.html'; // [cite: 213]
+                window.location.href = '../sale/order-list.html';
                 break;
             case 'CUSTOMER':
-                window.location.href = '../../index.html'; // Quay về trang chủ [cite: 213]
+                window.location.href = '../../index.html';
                 break;
             default:
-                alert('Tài khoản không có quyền truy cập hợp lệ!');
+                alert('Tai khoan khong co quyen truy cap hop le');
         }
-    } else {
-        // Đăng nhập thất bại: Hiển thị thông báo lỗi
+    } catch (error) {
+        console.error(error);
+        errorDiv.textContent = error.message || 'Sai tai khoan hoac mat khau';
         errorDiv.classList.remove('d-none');
     }
 });
