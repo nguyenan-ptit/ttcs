@@ -153,13 +153,6 @@ Database seed có các role:
 
 Một số tài khoản mẫu trong dump có mật khẩu đang lưu plaintext. Khi đưa vào môi trường thật, cần chuyển sang hash bằng `bcrypt`.
 
-## Lưu Ý Kỹ Thuật
-
-- Backend đã có middleware JWT trong `backend/src/middlewares/auth.middleware.js`, nhưng nhiều route hiện chưa gắn `requireAuth`/`requireRole`.
-- Frontend đang lưu user trong `localStorage` với key `currentUser`.
-- `backend/node_modules` và `.env` không nên commit lên Git. Nên thêm `.gitignore` nếu tiếp tục phát triển.
-- Password hiện đang so sánh plaintext trong route auth. Nên nâng cấp sang `bcrypt.compare` và `bcrypt.hash`.
-
 ## Kiểm Tra Nhanh
 
 Kiểm tra backend:
