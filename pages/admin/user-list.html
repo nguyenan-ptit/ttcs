@@ -117,15 +117,26 @@
                 </table>
             </div>
 
+            <!-- Pagination Container -->
+            <div id="paginationContainer" class="flex justify-between items-center mt-6">
+                <div class="text-sm text-gray-500" id="paginationInfo"></div>
+                <div class="flex space-x-2" id="paginationControls"></div>
+            </div>
+
         </div>
     </main>
     <script src="../../assets/js/api.js"></script>
     <script>
         // Mock data tương ứng với DB của bạn
         let users = [];
+        let filteredUsers = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
         async function loadUsers() {
             users = await apiGet('/users?type=staff');
-            renderTable(users);
+            filteredUsers = users;
+            renderTable();
         }
         // Format huy hiệu (badge) Role
         function getRoleBadge(role) {
@@ -139,11 +150,21 @@
         }
 
         // Render bảng
-        function renderTable(data) {
+        function renderTable() {
             const tbody = document.getElementById('userTableBody');
             tbody.innerHTML = '';
 
-            data.forEach((user, index) => {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedData = filteredUsers.slice(startIndex, endIndex);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Không tìm thấy tài khoản nào.</td></tr>`;
+                renderPagination();
+                return;
+            }
+
+            paginatedData.forEach((user, index) => {
                 const statusBadge = user.status === 'active'
                     ? `<span class="text-green-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-green-500"></div> Hoạt động</span>`
                     : `<span class="text-red-500 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-red-500"></div> Đã khóa</span>`;
@@ -164,6 +185,62 @@
                     </tr>
                 `;
             });
+
+            renderPagination();
+        }
+
+        // Pagination controls
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+            const info = document.getElementById('paginationInfo');
+            const controls = document.getElementById('paginationControls');
+
+            if (filteredUsers.length === 0) {
+                info.innerText = 'Hiển thị 0 tài khoản';
+                controls.innerHTML = '';
+                return;
+            }
+
+            const start = (currentPage - 1) * itemsPerPage + 1;
+            const end = Math.min(currentPage * itemsPerPage, filteredUsers.length);
+            info.innerText = `Hiển thị ${start} - ${end} trên tổng số ${filteredUsers.length} tài khoản`;
+
+            if (totalPages <= 1) {
+                controls.innerHTML = '';
+                return;
+            }
+
+            let paginationHtml = '';
+            
+            // Prev Button
+            if (currentPage > 1) {
+                paginationHtml += `<button onclick="changePage(${currentPage - 1})" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">Trước</button>`;
+            } else {
+                paginationHtml += `<button disabled class="px-3 py-1 border border-gray-200 text-gray-400 rounded cursor-not-allowed">Trước</button>`;
+            }
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHtml += `<button class="px-3 py-1 bg-[#a87b51] text-white rounded">${i}</button>`;
+                } else {
+                    paginationHtml += `<button onclick="changePage(${i})" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">${i}</button>`;
+                }
+            }
+
+            // Next Button
+            if (currentPage < totalPages) {
+                paginationHtml += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">Sau</button>`;
+            } else {
+                paginationHtml += `<button disabled class="px-3 py-1 border border-gray-200 text-gray-400 rounded cursor-not-allowed">Sau</button>`;
+            }
+
+            controls.innerHTML = paginationHtml;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
         }
 
         // Xử lý nút Khóa/Mở Khóa
@@ -186,23 +263,46 @@
 
 
         // Xử lý tìm kiếm
+        function normalizeText(text) {
+            if (!text) return '';
+            return text.toString().toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+        }
+
         document.getElementById('searchInput').addEventListener('input', function (e) {
-            const keyword = e.target.value.toLowerCase();
-            const filtered = users.filter(u => u.username.toLowerCase().includes(keyword));
-            renderTable(filtered);
+            const keyword = normalizeText(e.target.value);
+            filteredUsers = users.filter(u => 
+                normalizeText(u.username).includes(keyword) ||
+                normalizeText(u.fullName).includes(keyword) ||
+                normalizeText(u.role).includes(keyword)
+            );
+            currentPage = 1;
+            renderTable();
         });
 
         // Xử lý đăng xuất
         function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '../auth/login.html';
+            if (typeof EleganceApp !== 'undefined') {
+                EleganceApp.logout('../auth/login.html');
+            } else {
+                localStorage.removeItem('elegance_user');
+                localStorage.removeItem('elegance_token');
+                window.location.href = '../auth/login.html';
+            }
         }
 
         // Khởi chạy khi load trang
         document.addEventListener('DOMContentLoaded', () => {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const currentUser = typeof EleganceApp !== 'undefined' ? EleganceApp.getCurrentUser() : null;
             if (currentUser && currentUser.name) {
                 document.getElementById('adminNameDisplay').innerText = currentUser.name;
+            } else {
+                const fallback = JSON.parse(localStorage.getItem('elegance_user'));
+                if (fallback && fallback.name) {
+                    document.getElementById('adminNameDisplay').innerText = fallback.name;
+                }
             }
             loadUsers();
         });

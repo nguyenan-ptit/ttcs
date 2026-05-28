@@ -7,7 +7,7 @@ router.get('/ui', async (req, res) => {
     const [rows] = await pool.query(`
         SELECT setting_key AS settingKey, setting_value AS settingValue
         FROM site_settings
-        WHERE setting_key IN ('bannerUrl', 'topBarText', 'topBarVisible')
+        WHERE setting_key IN ('bannerUrl', 'banner2Url', 'topBarText', 'topBarVisible')
     `);
 
     const settings = rows.reduce((result, row) => {
@@ -17,6 +17,7 @@ router.get('/ui', async (req, res) => {
 
     res.json({
         bannerUrl: settings.bannerUrl || '',
+        banner2Url: settings.banner2Url || '',
         topBarText: settings.topBarText || '',
         topBarVisible: settings.topBarVisible === '1'
     });
@@ -24,6 +25,7 @@ router.get('/ui', async (req, res) => {
 
 router.put('/ui', async (req, res) => {
     const bannerUrl = String(req.body.bannerUrl || '').trim();
+    const banner2Url = String(req.body.banner2Url || '').trim();
     const topBarText = String(req.body.topBarText || '').trim();
     const topBarVisible = req.body.topBarVisible ? '1' : '0';
 
@@ -35,6 +37,7 @@ router.put('/ui', async (req, res) => {
 
     const values = [
         ['bannerUrl', bannerUrl],
+        ['banner2Url', banner2Url],
         ['topBarText', topBarText],
         ['topBarVisible', topBarVisible]
     ];

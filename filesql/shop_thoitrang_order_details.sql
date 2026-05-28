@@ -33,7 +33,7 @@ CREATE TABLE `order_details` (
   KEY `idx_order_details_variant_id` (`variant_id`),
   CONSTRAINT `fk_order_details_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `fk_order_details_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`variant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -42,7 +42,7 @@ CREATE TABLE `order_details` (
 
 LOCK TABLES `order_details` WRITE;
 /*!40000 ALTER TABLE `order_details` DISABLE KEYS */;
-INSERT INTO `order_details` VALUES (1,1,1,1,350000.00),(2,2,3,1,550000.00),(6,6,1,1,350000.00),(7,7,1,1,390000.00),(8,8,1,1,390000.00),(9,8,4,1,550000.00);
+INSERT INTO `order_details` VALUES (2,2,3,1,550000.00),(11,10,10,4,390000.00),(12,11,7,1,390000.00),(13,12,7,1,390000.00),(15,13,7,1,390000.00),(16,14,7,1,390000.00),(17,15,7,1,390000.00);
 /*!40000 ALTER TABLE `order_details` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -55,4 +55,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:48

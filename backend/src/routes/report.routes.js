@@ -77,7 +77,7 @@ router.get('/order-status', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Khong the lay ti le trang thai don hang' });
+        res.status(500).json({ message: 'Không thể lấy tỷ lệ trạng thái đơn hàng' });
     }
 });
 router.get('/low-stock', async (req, res) => {
@@ -100,14 +100,15 @@ router.get('/low-stock', async (req, res) => {
         })));
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Khong the lay san pham sap het hang' });
+        res.status(500).json({ message: 'Không thể lấy sản phẩm sắp hết hàng' });
     }
 });
 router.get('/revenue-by-category', async (req, res) => {
     try {
         const [rows] = await pool.query(`
             SELECT
-                c.name AS label,
+                c.category_name
+                AS label,
                 COALESCE(SUM(od.quantity * od.price), 0) AS value
             FROM order_details od
             JOIN orders o ON o.order_id = od.order_id
@@ -115,7 +116,8 @@ router.get('/revenue-by-category', async (req, res) => {
             JOIN products p ON p.product_id = pv.product_id
             JOIN categories c ON c.category_id = p.category_id
             WHERE o.status = 'DELIVERED'
-            GROUP BY c.category_id, c.name
+            GROUP BY c.category_id, c.category_name
+
             ORDER BY value DESC
         `);
 

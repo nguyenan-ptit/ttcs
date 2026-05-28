@@ -19,7 +19,214 @@ function parseVariantId(id) {
     return Number(String(id).replace('VAR-', ''));
 }
 
-function mapProduct(row, variants = []) {
+function getSizesBySizeType(sizeType) {
+    return sizeType === 'NUMBER' ? ['28', '29', '30', '31'] : ['S', 'M', 'L', 'XL'];
+}
+
+function normalizeSizeType(sizeType) {
+    return sizeType === 'NUMBER' ? 'NUMBER' : 'LETTER';
+}
+
+function normalizeColorItems(colors, variants) {
+    const source = Array.isArray(colors)
+        ? colors
+        : Array.isArray(variants)
+            ? variants.map((variant) => ({
+            name: variant.color,
+            imageUrl: variant.imageUrl
+            }))
+            : [];
+    const colorMap = new Map();
+    for (const item of source) {
+            const name = typeof item === 'string'
+                ? item.trim()
+                : String(item?.name || item?.color || '').trim();
+
+            if (!name) continue;
+
+            const imageUrl = typeof item === 'string'
+                ? ''
+                : String(item?.imageUrl || '').trim();
+
+            const oldName = typeof item === 'string'
+                ? ''
+                : String(item?.oldName || '').trim();
+
+            const isActive = typeof item === 'string'
+                ? true
+                : item?.isActive !== false;
+
+            colorMap.set(name, {
+                name,
+                oldName,
+                imageUrl,
+                isActive
+            });
+    }
+    return [...colorMap.values()];
+}
+
+function getVariantKey(color, size) {
+    return `${String(color || '').trim().toLowerCase()}|${String(size || '').trim().toLowerCase()}`;
+}
+
+function buildGeneratedVariants(colorItems, sizes) {
+    return colorItems.flatMap((colorItem) =>
+        sizes.map((size) => ({
+            color: colorItem.name,
+            oldColor: colorItem.oldColor || colorItem.oldName,
+            isActive: colorItem.isActive,
+            size
+        }))
+    );
+}
+
+async function syncProductVariants(connection, productId, colorItems, sizes) {
+    const desiredVariants = buildGeneratedVariants(colorItems, sizes);
+    const [existingVariants] = await connection.query(
+        `
+        SELECT
+            variant_id AS variantId,
+            color,
+            size
+        FROM product_variants
+        WHERE product_id = ?
+        ORDER BY variant_id
+        `,
+        [productId]
+    );
+
+    const existingByKey = new Map();
+    for (const variant of existingVariants) {
+        const key = getVariantKey(variant.color, variant.size);
+        if (!existingByKey.has(key)) {
+            existingByKey.set(key, variant);
+        }
+    }
+
+    const activeVariantIds = [];
+    for (const variant of desiredVariants) {
+        let existingVariant = null;
+
+        if (variant.oldColor) {
+            existingVariant = existingByKey.get(getVariantKey(variant.oldColor, variant.size));
+        }
+
+        if (!existingVariant) {
+            existingVariant = existingByKey.get(getVariantKey(variant.color, variant.size));
+        }
+
+        if (existingVariant) {
+            await connection.query(
+                `
+                UPDATE product_variants
+                SET
+                    color = ?,
+                    size = ?,
+                    is_active = ?
+                WHERE variant_id = ?
+                  AND product_id = ?
+                `,
+                [
+                    variant.color,
+                    variant.size,
+                    variant.isActive ? 1 : 0,
+                    existingVariant.variantId,
+                    productId
+                ]
+            );
+            activeVariantIds.push(existingVariant.variantId);
+            continue;
+        }
+
+        const [result] = await connection.query(
+            `
+            INSERT INTO product_variants (
+                product_id,
+                color,
+                size,
+                stock,
+                is_active
+            )
+            VALUES (?, ?, ?, 0, ?)
+            `,
+            [
+                productId,
+                variant.color,
+                variant.size,
+                variant.isActive ? 1 : 0
+            ]
+        );
+        activeVariantIds.push(result.insertId);
+    }
+
+    if (activeVariantIds.length) {
+        await connection.query(
+            `
+            UPDATE product_variants
+            SET is_active = 0
+            WHERE product_id = ?
+              AND variant_id NOT IN (?)
+            `,
+            [productId, activeVariantIds]
+        );
+    }
+}
+
+async function getCategorySizeType(connection, categoryId) {
+    const [categories] = await connection.query(
+        `
+        SELECT size_type AS sizeType
+        FROM categories
+        WHERE category_id = ?
+        `,
+        [categoryId]
+    );
+
+    return normalizeSizeType(categories[0]?.sizeType);
+}
+async function saveProductColorImages(connection, productId, colorItems) {
+    await connection.query(
+        `
+        UPDATE product_color_images
+        SET is_active = 0
+        WHERE product_id = ?
+        `,
+        [productId]
+    );
+
+    for (const item of colorItems) {
+        if (!item.imageUrl) continue;
+
+        await connection.query(
+            `
+            INSERT INTO product_color_images (
+                product_id,
+                color,
+                image_url,
+                is_active
+            )
+            VALUES (?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE
+                image_url = VALUES(image_url),
+                is_active = 1
+            `,
+            [
+                productId,
+                item.name,
+                item.imageUrl
+            ]
+        );
+    }
+}
+function mapColorImage(row) {
+    return {
+        color: row.color,
+        imageUrl: row.imageUrl,
+        isActive: Boolean(row.isActive)
+    };
+}
+function mapProduct(row, variants = [], colorImages = []) {
     const stock = variants.reduce((sum, item) => sum + Number(item.stock || 0), 0);
 
     return {
@@ -29,11 +236,13 @@ function mapProduct(row, variants = []) {
         name: row.name,
         categoryId: row.categoryId,
         categoryName: row.categoryName,
+        categorySizeType: row.categorySizeType,
         price: Number(row.price),
         description: row.description,
         status: row.isActive ? 'active' : 'draft',
         stock,
-        image: '',
+        image: colorImages[0]?.imageUrl || '',
+        colorImages,
         variants
     };
 }
@@ -44,7 +253,8 @@ router.get('/', async (req, res) => {
             p.product_id AS productId,
             p.name,
             p.category_id AS categoryId,
-            c.name AS categoryName,
+            c.category_name AS categoryName,
+            c.size_type AS categorySizeType,
             p.price,
             p.description,
             p.is_active AS isActive
@@ -64,7 +274,15 @@ router.get('/', async (req, res) => {
         FROM product_variants
         ORDER BY variant_id
     `);
-
+    const [colorImageRows] = await pool.query(`
+        SELECT
+            product_id AS productId,
+            color,
+            image_url AS imageUrl,
+            is_active AS isActive
+        FROM product_color_images
+        ORDER BY image_id
+    `);
     const result = products.map((product) => {
         const productVariants = variants
             .filter((variant) => variant.productId === product.productId)
@@ -78,8 +296,10 @@ router.get('/', async (req, res) => {
                 isActive: Boolean(variant.isActive),
                 status: variant.isActive ? 'active' : 'draft'
             }));
-
-        return mapProduct(product, productVariants);
+        const productColorImages = colorImageRows
+            .filter((image) => image.productId === product.productId&& Boolean(image.isActive))
+            .map(mapColorImage);
+        return mapProduct(product, productVariants, productColorImages);
     });
 
     res.json(result);
@@ -88,16 +308,27 @@ router.get('/', async (req, res) => {
 router.get('/categories', async (req, res) => {
     const [categories] = await pool.query(`
         SELECT
-            category_id AS categoryId,
-            name,
-            is_active AS isActive
-        FROM categories
-        ORDER BY category_id
+            c.category_id AS categoryId,
+            c.category_name AS name,
+            c.size_type AS sizeType,
+            c.is_active AS isActive,
+            COUNT(p.product_id) AS productCount
+        FROM categories c
+        LEFT JOIN products p ON p.category_id = c.category_id
+        GROUP BY
+            c.category_id,
+            c.category_name,
+            c.size_type,
+            c.is_active
+        ORDER BY c.category_id
     `);
+
     res.json(categories.map((category) => ({
         categoryId: category.categoryId,
         id: `CAT-${String(category.categoryId).padStart(2, '0')}`,
         name: category.name,
+        sizeType: normalizeSizeType(category.sizeType),
+        productCount: Number(category.productCount || 0),
         isActive: Boolean(category.isActive),
         status: category.isActive ? 'active' : 'draft'
     })));
@@ -108,7 +339,8 @@ router.get('/public', async (req, res) => {
             p.product_id AS productId,
             p.name,
             p.category_id AS categoryId,
-            c.name AS categoryName,
+            c.category_name AS categoryName,
+            c.size_type AS categorySizeType,
             p.price,
             p.description,
             p.is_active AS isActive
@@ -131,7 +363,16 @@ router.get('/public', async (req, res) => {
         WHERE is_active = 1
         ORDER BY variant_id
     `);
-
+    const [colorImageRows] = await pool.query(`
+        SELECT
+            product_id AS productId,
+            color,
+            image_url AS imageUrl,
+            is_active AS isActive
+        FROM product_color_images
+        WHERE is_active = 1
+        ORDER BY image_id
+    `);
     const result = products.map((product) => {
         const productVariants = variants
             .filter((variant) => variant.productId === product.productId)
@@ -143,8 +384,10 @@ router.get('/public', async (req, res) => {
                 size: variant.size,
                 stock: Number(variant.stock)
             }));
-
-        return mapProduct(product, productVariants);
+        const productColorImages = colorImageRows
+            .filter((image) => image.productId === product.productId)
+            .map(mapColorImage);
+        return mapProduct(product, productVariants, productColorImages);
     });
 
     res.json(result);
@@ -157,7 +400,8 @@ router.get('/public/:id', async (req, res) => {
             p.product_id AS productId,
             p.name,
             p.category_id AS categoryId,
-            c.name AS categoryName,
+            c.category_name AS categoryName,
+            c.size_type AS categorySizeType,
             p.price,
             p.description,
             p.is_active AS isActive
@@ -185,7 +429,19 @@ router.get('/public/:id', async (req, res) => {
           AND is_active = 1
         ORDER BY variant_id
     `, [productId]);
+    const [colorImageRows] = await pool.query(`
+        SELECT
+            product_id AS productId,
+            color,
+            image_url AS imageUrl,
+            is_active AS isActive
+        FROM product_color_images
+        WHERE product_id = ?
+          AND is_active = 1
+        ORDER BY image_id
+    `, [productId]);
 
+    const productColorImages = colorImageRows.map(mapColorImage);
     const productVariants = variants.map((variant) => ({
         id: formatVariantId(variant.variantId),
         variantId: variant.variantId,
@@ -197,7 +453,7 @@ router.get('/public/:id', async (req, res) => {
         status: variant.isActive ? 'active' : 'draft'
     }));
 
-    res.json(mapProduct(products[0], productVariants));
+    res.json(mapProduct(products[0], productVariants, productColorImages));
 });
 router.get('/:id', async (req, res) => {
     const productId = parseProductId(req.params.id);
@@ -207,7 +463,8 @@ router.get('/:id', async (req, res) => {
             p.product_id AS productId,
             p.name,
             p.category_id AS categoryId,
-            c.name AS categoryName,
+            c.category_name AS categoryName,
+            c.size_type AS categorySizeType,
             p.price,
             p.description,
             p.is_active AS isActive
@@ -232,7 +489,18 @@ router.get('/:id', async (req, res) => {
         WHERE product_id = ?
         ORDER BY variant_id
     `, [productId]);
+    const [colorImageRows] = await pool.query(`
+        SELECT
+            product_id AS productId,
+            color,
+            image_url AS imageUrl,
+            is_active AS isActive
+        FROM product_color_images
+        WHERE product_id = ?
+        ORDER BY image_id
+    `, [productId]);
 
+    const productColorImages = colorImageRows.map(mapColorImage);
     const productVariants = variants.map((variant) => ({
         id: formatVariantId(variant.variantId),
         variantId: variant.variantId,
@@ -244,16 +512,17 @@ router.get('/:id', async (req, res) => {
         status: variant.isActive ? 'active' : 'draft'
     }));
 
-    res.json(mapProduct(products[0], productVariants));
+    res.json(mapProduct(products[0], productVariants, productColorImages));
 });
 router.post('/', async (req, res) => {
-    const { name, categoryId, price, description, isActive, variants } = req.body;
+    const { name, categoryId, price, description, isActive, colors, variants } = req.body;
+    const productColors = normalizeColorItems(colors, variants);
 
     if (!name || !categoryId || !price || !description) {
         return res.status(400).json({ message: 'Thiếu thông tin sản phâm' });
     }
 
-    if (!Array.isArray(variants) || variants.length === 0) {
+    if (productColors.length === 0) {
         return res.status(400).json({ message: 'Sản phầm cần có ít nhất 1 loại' });
     }
 
@@ -283,29 +552,11 @@ router.post('/', async (req, res) => {
         );
 
         const productId = productResult.insertId;
+        const sizeType = await getCategorySizeType(connection, categoryId);
+        const sizes = getSizesBySizeType(sizeType);
 
-        for (const variant of variants) {
-            await connection.query(
-                `
-                INSERT INTO product_variants (
-                    product_id,
-                    color,
-                    size,
-                    stock,
-                    is_active
-                )
-                VALUES (?, ?,?, ?, ?)
-                `,
-                [
-                    productId,
-                    variant.color,
-                    variant.size,
-                    0,
-                    variant.isActive === false ? 0 : 1
-                ]
-            );
-        }
-
+        await syncProductVariants(connection, productId, productColors, sizes);
+        await saveProductColorImages(connection, productId, productColors);
         await connection.commit();
 
         res.status(201).json({
@@ -323,13 +574,14 @@ router.post('/', async (req, res) => {
 });
 router.put('/:id', async (req, res) => {
     const productId = parseProductId(req.params.id);
-    const { name, categoryId, price, description, isActive, variants } = req.body;
+    const { name, categoryId, price, description, isActive, colors, variants } = req.body;
+    const productColors = normalizeColorItems(colors, variants);
 
     if (!name || !categoryId || !price || !description) {
         return res.status(400).json({ message: 'Thiếu thông tin sản phẩm' });
     }
 
-    if (!Array.isArray(variants) || variants.length === 0) {
+    if (productColors.length === 0) {
         return res.status(400).json({ message: 'Sản phẩm ít nhất có 1 loại' });
     }
 
@@ -364,64 +616,11 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
         }
 
-        for (const variant of variants) {
-            if (!variant.color || !variant.size) {
-                await connection.rollback();
-                return res.status(400).json({ message: 'Bien the can co mau sac va kich co' });
-            }
+        const sizeType = await getCategorySizeType(connection, categoryId);
+        const sizes = getSizesBySizeType(sizeType);
 
-            const variantId = variant.variantId || variant.id ? parseVariantId(variant.variantId || variant.id) : null;
-
-            if (variantId) {
-                const [variantResult] = await connection.query(
-                    `
-                    UPDATE product_variants
-                    SET
-                        color = ?,
-                        size = ?,
-                        is_active = ?
-                    WHERE variant_id = ?
-                      AND product_id = ?
-                    `,
-                    [
-                        variant.color,
-                        variant.size,
-                        variant.isActive === false ? 0 : 1,
-                        variantId,
-                        productId
-                    ]
-                );
-
-                if (variantResult.affectedRows > 0) {
-                    continue;
-                }
-            }
-
-            await connection.query(
-                `
-                INSERT INTO product_variants (
-                    product_id,
-                    color,
-                    size,
-                    stock,
-                    is_active
-                )
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    color = VALUES(color),
-                    size = VALUES(size),
-                    is_active = VALUES(is_active)
-                `,
-                [
-                    productId,
-                    variant.color,
-                    variant.size,
-                    0,
-                    variant.isActive === false ? 0 : 1
-                ]
-            );
-        }
-
+        await syncProductVariants(connection, productId, productColors, sizes);
+        await saveProductColorImages(connection, productId, productColors);
         await connection.commit();
 
         res.json({
@@ -465,7 +664,8 @@ router.patch('/:id/status', async (req, res) => {
     });
 });
 router.post('/categories', async (req, res) => {
-    const { name } = req.body;
+    const { name, sizeType } = req.body;
+    const normalizedSizeType = normalizeSizeType(sizeType);
 
     if (!name || !name.trim()) {
         return res.status(400).json({ message: 'Ten danh muc khong duoc de trong' });
@@ -474,17 +674,18 @@ router.post('/categories', async (req, res) => {
     try {
         const [result] = await pool.query(
             `
-            INSERT INTO categories (name)
-            VALUES (?)
+            INSERT INTO categories (category_name, size_type)
+            VALUES (?, ?)
             `,
-            [name.trim()]
+            [name.trim(), normalizedSizeType]
         );
 
         res.status(201).json({
             message: 'Tao danh muc thanh cong',
             category: {
                 categoryId: result.insertId,
-                name: name.trim()
+                name: name.trim(),
+                sizeType: normalizedSizeType
             }
         });
     } catch (error) {
@@ -499,7 +700,8 @@ router.post('/categories', async (req, res) => {
 
 router.put('/categories/:id', async (req, res) => {
     const categoryId = Number(req.params.id);
-    const { name } = req.body;
+    const { name, sizeType } = req.body;
+    const normalizedSizeType = normalizeSizeType(sizeType);
 
     if (!name || !name.trim()) {
         return res.status(400).json({ message: 'Ten danh muc khong duoc de trong' });
@@ -509,10 +711,11 @@ router.put('/categories/:id', async (req, res) => {
         const [result] = await pool.query(
             `
             UPDATE categories
-            SET name = ?
+            SET category_name = ?,
+                size_type = ?
             WHERE category_id = ?
             `,
-            [name.trim(), categoryId]
+            [name.trim(), normalizedSizeType, categoryId]
         );
 
         if (result.affectedRows === 0) {
@@ -523,7 +726,8 @@ router.put('/categories/:id', async (req, res) => {
             message: 'Cap nhat danh muc thanh cong',
             category: {
                 categoryId,
-                name: name.trim()
+                name: name.trim(),
+                sizeType: normalizedSizeType
             }
         });
     } catch (error) {

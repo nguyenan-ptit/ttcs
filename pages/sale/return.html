@@ -114,7 +114,7 @@
                                     <label class="form-label" for="returnNote">Ghi chú xử lý</label>
                                     <textarea id="returnNote" class="form-textarea" placeholder="Ghi rõ điều kiện hàng hóa, phương án đổi/trả hoặc lý do từ chối"></textarea>
                                 </div>
-                                <div class="flex justify-end gap-3">
+                                <div id="returnDecisionButtons" class="flex justify-end gap-3">
                                     <button id="rejectReturnButton" class="btn-danger" type="button">Từ chối đổi trả</button>
                                     <button class="btn-primary" type="submit">Duyệt đổi trả</button>
                                 </div>
@@ -239,7 +239,44 @@
                 </tr>
             `).join('');
 
-            EleganceApp.hideNotice('returnActionNotice');
+            // Pre-fill existing return reason and note if any
+            if (order.returnReason) {
+                const reasonSelect = document.getElementById('returnReason');
+                const options = Array.from(reasonSelect.options).map(opt => opt.value);
+                if (!options.includes(order.returnReason)) {
+                    const newOption = new Option(order.returnReason, order.returnReason);
+                    reasonSelect.add(newOption);
+                }
+                reasonSelect.value = order.returnReason;
+            } else {
+                document.getElementById('returnReason').selectedIndex = 0;
+            }
+
+            document.getElementById('returnNote').value = order.returnNote || '';
+
+            const isProcessed = order.returnStatus === 'APPROVED' || order.returnStatus === 'REJECTED';
+            const decisionButtons = document.getElementById('returnDecisionButtons');
+            if (decisionButtons) {
+                if (isProcessed) {
+                    decisionButtons.classList.add('hidden');
+                    document.getElementById('returnReason').disabled = true;
+                    document.getElementById('returnNote').disabled = true;
+                    EleganceApp.renderNotice(
+                        'returnActionNotice',
+                        order.returnStatus === 'APPROVED' 
+                            ? 'Yêu cầu đổi trả này đã được duyệt.'
+                            : 'Yêu cầu đổi trả này đã bị từ chối.',
+                        order.returnStatus === 'APPROVED' ? 'success' : 'info'
+                    );
+                } else {
+                    decisionButtons.classList.remove('hidden');
+                    document.getElementById('returnReason').disabled = false;
+                    document.getElementById('returnNote').disabled = false;
+                    EleganceApp.hideNotice('returnActionNotice');
+                }
+            } else {
+                EleganceApp.hideNotice('returnActionNotice');
+            }
         }
 
         async function createReturn(decision) {

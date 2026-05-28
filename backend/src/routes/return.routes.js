@@ -61,6 +61,7 @@ function mapReturnRows(rows) {
                 orderId: formatOrderId(row.orderId),
                 source: row.receiverName || row.customerName,
                 reason: row.reason,
+                returnNote: row.returnNote || '',
                 note: row.orderNote || '',
                 date: row.createdAt,
                 rawStatus: row.status,
@@ -110,6 +111,7 @@ router.get('/', async (req, res) => {
             r.return_id AS returnId,
             r.order_id AS orderId,
             r.reason,
+            r.note AS returnNote,
             r.status,
             r.created_at AS createdAt,
             o.receiver_name AS receiverName,
@@ -158,6 +160,7 @@ router.get('/user/:userId', async (req, res) => {
             r.return_id AS returnId,
             r.order_id AS orderId,
             r.reason,
+            r.note AS returnNote,
             r.status,
             r.created_at AS createdAt,
             o.receiver_name AS receiverName,
@@ -251,6 +254,27 @@ router.get('/orders/:id', async (req, res) => {
         [orderId]
     );
 
+    const [existingReturns] = await pool.query(
+        `
+        SELECT reason, note, status
+        FROM returns
+        WHERE order_id = ?
+        ORDER BY return_id DESC
+        LIMIT 1
+        `,
+        [orderId]
+    );
+
+    let returnReason = '';
+    let returnNote = '';
+    let returnStatus = '';
+
+    if (existingReturns.length > 0) {
+        returnReason = existingReturns[0].reason || '';
+        returnNote = existingReturns[0].note || '';
+        returnStatus = existingReturns[0].status;
+    }
+
     res.json({
         id: formatOrderId(order.orderId),
         orderId: order.orderId,
@@ -263,6 +287,9 @@ router.get('/orders/:id', async (req, res) => {
         note: order.note || '',
         payment: order.payment,
         totalAmount: Number(order.totalAmount),
+        returnReason,
+        returnNote,
+        returnStatus,
         items: items.map((item) => ({
             productId: formatProductId(item.productId),
             variantId: formatVariantId(item.variantId),
@@ -386,6 +413,7 @@ router.post('/request', async (req, res) => {
 router.post('/', async (req, res) => {
     const orderId = parseOrderId(req.body.orderId);
     const reason = String(req.body.reason || '').trim();
+    const note = String(req.body.note || '').trim();
     const decision = req.body.decision === 'rejected' ? 'rejected' : 'approved';
     const status = mapDbReturnStatus(decision);
 
@@ -445,10 +473,11 @@ router.post('/', async (req, res) => {
                 `
                 UPDATE returns
                 SET reason = ?,
+                    note = ?,
                     status = ?
                 WHERE return_id = ?
                 `,
-                [reason, status, returnId]
+                [reason, note, status, returnId]
             );
         } else {
             const [result] = await connection.query(
@@ -457,11 +486,12 @@ router.post('/', async (req, res) => {
                     order_id,
                     user_id,
                     reason,
+                    note,
                     status
                 )
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?)
                 `,
-                [orderId, orders[0].userId, reason, status]
+                [orderId, orders[0].userId, reason, note, status]
             );
 
             returnId = result.insertId;

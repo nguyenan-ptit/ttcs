@@ -48,7 +48,7 @@
                     <div id="productNotice" class="hidden mb-5"></div>
                     <div class="toolbar">
                         <div class="toolbar-group flex-1">
-                            <input id="productKeyword" class="form-input max-w-md" type="text" placeholder="Tìm tên sản phẩm hoặc SKU">
+                            <input id="productKeyword" class="form-input max-w-md" type="text" placeholder="Tìm tên sản phẩm hoặc Mã">
                             <select id="productStatus" class="form-select max-w-[220px]">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="active">Đang bán</option>
@@ -61,7 +61,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>SKU</th>
+                                    <th>Mã</th>
                                     <th>Sản phẩm</th>
                                     <th>Danh mục</th>
                                     <th>Giá</th>
@@ -73,6 +73,7 @@
                             </thead>
                             <tbody id="productTable"></tbody>
                         </table>
+                        <div id="productPagination" class="flex justify-center items-center gap-2 mt-6 hidden"></div>
                     </div>
                 </div>
             </section>
@@ -92,8 +93,8 @@
                         <input class="form-input" id="productName" type="text" required>
                     </div>
                     <div>
-                        <label class="form-label" for="productSku">SKU</label>
-                        <input class="form-input" id="productSku" type="text" readonly placeholder="Tu dong tao sau khi luu">
+                        <label class="form-label" for="productSku">Mã</label>
+                        <input class="form-input" id="productSku" type="text" readonly placeholder="Tự động tạo khi lưu sản phẩm mới">
                     </div>
                     <div>
                         <label class="form-label" for="productCategory">Danh mục</label>
@@ -114,19 +115,16 @@
                         <label class="form-label" for="productDescription">Mô tả</label>
                         <textarea class="form-input min-h-[120px]" id="productDescription" required></textarea>
                     </div>
-                    <div>
-                        <label class="form-label" for="productImage">URL hình ảnh</label>
-                        <input class="form-input" id="productImage" type="url">
-                    </div>
+
                 </div>
 
                 <div class="rounded-2xl border border-gray-100 p-4">
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div>
                             <h3 class="font-semibold text-gray-900">Biến thể sản phẩm</h3>
-                            <p class="text-sm text-gray-500 mt-1">Quản lý màu sắc, size. Tồn kho do nhân viên kho cập nhật.</p>
+                            <p class="text-sm text-gray-500 mt-1">Manager chỉ chọn màu. Size tự sinh theo danh mục, tồn kho do kho cập nhật.</p>
                         </div>
-                        <button type="button" onclick="addVariantRow()" class="btn-secondary">Thêm biến thể</button>
+                        <button type="button" onclick="addVariantRow()" class="btn-secondary">Thêm màu</button>
                     </div>
                     <div id="variantRows" class="stack"></div>
                 </div>
@@ -146,6 +144,8 @@
         let editingVariants = [];
         let products = [];
         let categories = [];
+        let currentProductPage = 1;
+        const PRODUCTS_PER_PAGE = 10;
         async function loadProducts() {
             [products, categories] = await Promise.all([
                 apiGet('/products'),
@@ -174,7 +174,14 @@
                 return matchesKeyword && matchesStatus;
             });
 
-            document.getElementById('productTable').innerHTML = filteredProducts.map((product) => {
+            const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+            if (currentProductPage > totalPages && totalPages > 0) currentProductPage = totalPages;
+            if (currentProductPage < 1) currentProductPage = 1;
+
+            const startIndex = (currentProductPage - 1) * PRODUCTS_PER_PAGE;
+            const pagedProducts = filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+
+            document.getElementById('productTable').innerHTML = pagedProducts.map((product) => {
                 const category = { name: product.categoryName };
                 const meta = EleganceApp.productStatusMeta(product.status);
                 const variants = product.variants || [];
@@ -196,58 +203,169 @@
                     </tr>
                 `;
             }).join('') || '<tr><td colspan="8" class="empty-state">Chưa có sản phẩm nào.</td></tr>';
+
+            renderPaginationControls(totalPages);
+        }
+
+        function renderPaginationControls(totalPages) {
+            const pagination = document.getElementById('productPagination');
+            if (!pagination) return;
+
+            if (totalPages > 1) {
+                pagination.classList.remove('hidden');
+                let html = '';
+                
+                html += `
+                    <button type="button" onclick="setProductPage(${currentProductPage - 1})" ${currentProductPage === 1 ? 'disabled' : ''} 
+                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:text-[#a87b51] hover:border-[#a87b51] disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-500 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                `;
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const isActive = i === currentProductPage;
+                    const activeClass = isActive ? 'bg-[#a87b51] text-white border-[#a87b51]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#a87b51] hover:text-[#a87b51]';
+                    html += `
+                        <button type="button" onclick="setProductPage(${i})" class="w-10 h-10 flex items-center justify-center rounded-xl border font-semibold transition ${activeClass}">
+                            ${i}
+                        </button>
+                    `;
+                }
+
+                html += `
+                    <button type="button" onclick="setProductPage(${currentProductPage + 1})" ${currentProductPage === totalPages ? 'disabled' : ''} 
+                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:text-[#a87b51] hover:border-[#a87b51] disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-500 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                `;
+                pagination.innerHTML = html;
+            } else {
+                pagination.classList.add('hidden');
+            }
+        }
+
+        window.setProductPage = function(page) {
+            currentProductPage = page;
+            renderProductTable();
+        };
+
+        function getSelectedProductCategory() {
+            const categoryId = Number(document.getElementById('productCategory').value);
+            return categories.find((category) => Number(category.categoryId) === categoryId);
+        }
+
+        function getSizeOptionsForProductForm() {
+            const category = getSelectedProductCategory();
+            return category?.sizeType === 'NUMBER'
+                ? ['28', '29', '30', '31']
+                : ['S', 'M', 'L', 'XL'];
+        }
+
+        function getActiveProductColors(product) {
+            const allVariants = product?.variants || [];
+            const colors = [...new Set(allVariants.map((variant) => variant.color).filter(Boolean))];
+
+            return colors.map((color) => {
+                const colorImage = (product?.colorImages || []).find((image) => image.color === color);
+                const isActive = allVariants.some(v => v.color === color && v.isActive !== false);
+
+                return {
+                    color,
+                    imageUrl: colorImage?.imageUrl || '',
+                    isPersisted: true,
+                    isActive
+                };
+            });
         }
 
         function addVariantRow(variant = {}) {
             editingVariants.push({
-                id: variant.id || '',
                 color: variant.color || '',
-                size: variant.size || '',
-                stock: Number(variant.stock || 0),
-                isActive: variant.isActive === false ? false : true
+                oldColor: variant.color || '',
+                imageUrl: variant.imageUrl || '',
+                isPersisted: variant.isPersisted === true,
+                isActive: variant.isActive !== false
             });
             renderVariantRows();
         }
 
-        function toggleVariantActive(index) {
-            editingVariants[index].isActive = editingVariants[index].isActive === false ? true : false;
+        function removeVariantRow(index) {
+            const variant = editingVariants[index];
+            if (variant.isPersisted) {
+                alert('Không thể xóa màu đã lưu vì có thể làm mất dữ liệu tồn kho. Vui lòng chuyển trạng thái sang "Đã ẩn" và bấm Lưu.');
+                return;
+            }
+
+            if (!confirm('Bạn có chắc muốn bỏ màu này khỏi form?')) {
+                return;
+            }
+
+            editingVariants.splice(index, 1);
+
+            if (!editingVariants.length) {
+                editingVariants.push({ color: '', oldColor: '', imageUrl: '', isPersisted: false, isActive: true });
+            }
+
             renderVariantRows();
         }
 
         function renderVariantRows() {
+            const sizes = getSizeOptionsForProductForm();
             document.getElementById('variantRows').innerHTML = editingVariants.map((variant, index) => `
-                <div class="grid md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
-                    <input type="hidden" data-variant-id value="${variant.id}">
+                <div class="grid md:grid-cols-[1.2fr_1.2fr_0.8fr_100px_auto] gap-3 items-end">
                     <div>
-                        <label class="form-label">Màu sắc</label>
-                        <input class="form-input" data-variant-color value="${variant.color}" placeholder="Trắng, Đen, Be...">
+                        <label class="form-label text-xs">Màu sắc</label>
+                        <input class="form-input" data-variant-color value="${variant.color || ''}" placeholder="Trắng, Đen, Be...">
                     </div>
                     <div>
-                        <label class="form-label">Size</label>
-                        <input class="form-input" data-variant-size value="${variant.size}" placeholder="S, M, L, 30...">
+                        <label class="form-label text-xs">URL ảnh màu</label>
+                        <input class="form-input" data-color-image-url type="url" value="${variant.imageUrl || ''}" placeholder="https://link.jpg">
                     </div>
                     <div>
-                             <label class="form-label">Tồn kho</label>
-                             <div class="form-input bg-gray-50 text-gray-500">
-                                ${Number(variant.stock || 0)}
-                            </div>
+                        <label class="form-label text-xs">Size tự tạo</label>
+                        <div class="form-input bg-gray-50 text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap">${sizes.join(', ')}</div>
                     </div>
-                    <button type="button" onclick="toggleVariantActive(${index})" class="btn-secondary text-amber-700">
-                        ${variant.isActive === false ? 'Hiện' : 'Ẩn'}
+                    <div>
+                        <label class="form-label text-xs">Trạng thái</label>
+                        <select class="form-select px-2" data-variant-active>
+                            <option value="true" ${variant.isActive !== false ? 'selected' : ''}>Bán</option>
+                            <option value="false" ${variant.isActive === false ? 'selected' : ''}>Ẩn</option>
+                        </select>
+                    </div>
+                    ${!variant.isPersisted ? `
+                    <button type="button" onclick="removeVariantRow(${index})" class="btn-secondary text-amber-700 px-3 w-full" title="Bỏ màu">
+                        Xóa
                     </button>
+                    ` : '<div class="w-[60px]"></div>'}
                 </div>
-            `).join('') || '<div class="empty-state">Chưa có biến thể. Hãy thêm ít nhất một màu/size.</div>';
+            `).join('') || '<div class="empty-state">Chưa có màu nào. Hãy thêm ít nhất một màu.</div>';
         }
 
-        function collectVariants() {
+        function collectColors() {
             const rows = [...document.querySelectorAll('#variantRows > div.grid')];
-            return rows.map((row, index) => ({
-                id: row.querySelector('[data-variant-id]').value,
-                color: row.querySelector('[data-variant-color]').value.trim(),
-                size: row.querySelector('[data-variant-size]').value.trim(),
-                isActive: editingVariants[index]?.isActive === false ? false : true
-            })).filter((variant) => variant.color && variant.size);
+            const colorMap = new Map();
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const name = row.querySelector('[data-variant-color]')?.value.trim();
+                const imageUrl = row.querySelector('[data-color-image-url]')?.value.trim();
+                const isActive = row.querySelector('[data-variant-active]')?.value === 'true';
+                const oldName = editingVariants[i]?.oldColor || '';
+
+                if (!name) continue;
+
+                colorMap.set(name, {
+                    name,
+                    oldName,
+                    imageUrl: imageUrl || '',
+                    isActive
+                });
+            }
+
+            return [...colorMap.values()];
         }
+
+
 
         function openProductForm(productId) {
             const product = productId ? products.find((item) => item.id === productId) : null;
@@ -259,10 +377,10 @@
             document.getElementById('productPrice').value = product?.price || '';
             document.getElementById('productDescription').value = product?.description || '';
             document.getElementById('productStatusInput').value = product?.status || 'active';
-            document.getElementById('productImage').value = product?.image || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=600&auto=format&fit=crop';
-            editingVariants = product ? (product.variants || []).map((variant) => ({ ...variant })) : [];
-            if (!editingVariants.length) addVariantRow();
-            else renderVariantRows();
+
+            const colors = getActiveProductColors(product);
+            editingVariants = colors.length ? colors.map(c => ({...c, oldColor: c.color})) : [{ color: '', oldColor: '', imageUrl: '', isPersisted: false, isActive: true }];
+            renderVariantRows();
             document.getElementById('productModal').classList.remove('hidden');
             document.getElementById('productModal').classList.add('flex');
         }
@@ -301,19 +419,24 @@
 
             document.getElementById('productKeyword').addEventListener('input', (event) => {
                 productKeyword = event.target.value;
+                currentProductPage = 1;
                 renderProductTable();
             });
             document.getElementById('productStatus').addEventListener('change', (event) => {
                 statusFilter = event.target.value;
+                currentProductPage = 1;
                 renderProductTable();
+            });
+            document.getElementById('productCategory').addEventListener('change', () => {
+                renderVariantRows();
             });
 
             document.getElementById('productForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const id = document.getElementById('productId').value;
-                const variants = collectVariants();
-                if (!variants.length) {
-                    alert('Vui lòng thêm ít nhất một biến thể màu sắc/size.');
+                const colors = collectColors();
+                if (!colors.length) {
+                    alert('Vui lòng thêm ít nhất một màu sắc.');
                     return;
                 }
 
@@ -323,7 +446,7 @@
                     price: Number(document.getElementById('productPrice').value),
                     description: document.getElementById('productDescription').value.trim(),
                     isActive: document.getElementById('productStatusInput').value === 'active',
-                    variants
+                    colors
                 };
 
                 try {

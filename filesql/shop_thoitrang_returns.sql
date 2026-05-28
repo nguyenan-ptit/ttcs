@@ -29,12 +29,13 @@ CREATE TABLE `returns` (
   `reason` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('APPROVED','REJECTED','REQUESTED') COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `note` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`return_id`),
   KEY `idx_returns_order_id` (`order_id`),
   KEY `idx_returns_user_id` (`user_id`),
   CONSTRAINT `fk_returns_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `fk_returns_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,7 +44,7 @@ CREATE TABLE `returns` (
 
 LOCK TABLES `returns` WRITE;
 /*!40000 ALTER TABLE `returns` DISABLE KEYS */;
-INSERT INTO `returns` VALUES (1,1,5,'Không vừa size','REJECTED','2026-05-28 16:59:37.087512'),(2,7,5,'Không vừa size','APPROVED','2026-05-28 17:29:23.484905');
+INSERT INTO `returns` VALUES (3,15,5,'Không vừa size','REJECTED','2026-05-29 02:45:29.743428',NULL),(4,12,5,'Không vừa size','APPROVED','2026-05-29 02:45:59.290457','');
 /*!40000 ALTER TABLE `returns` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -56,4 +57,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:48

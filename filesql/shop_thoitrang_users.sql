@@ -42,7 +42,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin_thanh','admin123','Hoang Van Nam',1,1),(2,'manager_lan','123456','Lê Thị Lan',2,1),(3,'sale_tuan','123456','Sale Updated',3,0),(4,'kho_hieu','123456','Phạm Minh Hiếu',3,1),(5,'khach_hang1','khach123','Hoàng Văn Nam',5,1),(6,'khach_hang2','khach123','Trần Thị Mai',5,1),(7,'admin','123456','An Nguyễn Văn An',5,1),(9,'customer_test_8287','123456','Customer Test',5,1),(10,'minh','123456','Lê Quốc Tuấn',4,1);
+INSERT INTO `users` VALUES (1,'admin_thanh','admin123','Hoang Van Nam',1,1),(2,'manager_lan','123456','Lê Thị Lan',2,1),(3,'sale_tuan','123456','Sale Updated',3,1),(4,'kho_hieu','123456','Phạm Minh Hiếu',4,1),(5,'khach_hang1','khach123','Hoàng Văn Nam',5,1),(6,'khach_hang2','khach123','Trần Thị Mai',5,1),(7,'admin','123456','An Nguyễn Văn An',5,1),(9,'customer_test_8287','123456','Customer Test',5,1),(10,'minh','123456','Lê Quốc Tuấn',3,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -55,4 +55,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:42
+-- Dump completed on 2026-05-29  3:39:47

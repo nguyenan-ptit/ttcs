@@ -72,8 +72,7 @@
         <header class="h-20 bg-white flex items-center justify-between px-8 shadow-sm z-10">
             <h2 class="text-2xl font-semibold text-gray-800">Cấu hình giao diện Website</h2>
             <div class="flex items-center gap-4">
-                <a href="../../index.html"
-                    class="text-sm font-semibold text-[#a87b51] hover:text-[#8b633f] transition">Mở trang chủ</a>
+
                 <span class="text-sm text-gray-500">Xin chào, <b id="adminNameDisplay"
                         class="text-black">Admin</b></span>
                 <div class="w-10 h-10 bg-[#a87b51] rounded-full flex items-center justify-center text-white font-bold">
@@ -90,7 +89,7 @@
                     <h3 class="text-lg font-bold mb-4 border-b pb-2">Banner Trang Chủ</h3>
                     <form id="bannerForm">
                         <div class="mb-4">
-                            <label class="block text-sm font-semibold mb-2 text-gray-700">URL hình ảnh Banner</label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">URL hình ảnh Banner 1</label>
                             <input type="url" id="bannerUrl"
                                 class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]"
                                 required>
@@ -98,12 +97,33 @@
                         <div class="mb-6">
                             <p class="block text-sm font-semibold mb-2 text-gray-700">Hình ảnh xem trước</p>
                             <div class="w-full h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img id="bannerPreview" class="w-full h-full object-cover" alt="Preview Banner">
+                                <img id="bannerPreview" class="w-full h-full object-cover" alt="Preview Banner 1">
                             </div>
                         </div>
                         <button type="submit"
                             class="bg-[#1a1a1a] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#a87b51] transition w-full">
-                            Lưu Banner
+                            Lưu Banner 1
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Banner Về Chúng Tôi</h3>
+                    <form id="banner2Form">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold mb-2 text-gray-700">URL hình ảnh Banner 2</label>
+                            <input type="url" id="banner2Url"
+                                class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#a87b51]">
+                        </div>
+                        <div class="mb-6">
+                            <p class="block text-sm font-semibold mb-2 text-gray-700">Hình ảnh xem trước</p>
+                            <div class="w-full h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                <img id="banner2Preview" class="w-full h-full object-cover" alt="Preview Banner 2">
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="bg-[#1a1a1a] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#a87b51] transition w-full">
+                            Lưu Banner 2
                         </button>
                     </form>
                 </div>
@@ -156,6 +176,10 @@
 
                 document.getElementById('bannerUrl').value = uiConfig.bannerUrl;
                 document.getElementById('bannerPreview').src = uiConfig.bannerUrl;
+                document.getElementById('banner2Url').value = uiConfig.banner2Url || '';
+                if (uiConfig.banner2Url) {
+                    document.getElementById('banner2Preview').src = uiConfig.banner2Url;
+                }
                 document.getElementById('topBarText').value = uiConfig.topBarText;
                 document.getElementById('topBarStatus').value = uiConfig.topBarVisible ? 'active' : 'hidden';
             } catch (error) {
@@ -166,18 +190,37 @@
                 document.getElementById('bannerPreview').src = event.target.value;
             });
 
-            document.getElementById('bannerForm').addEventListener('submit', function (event) {
+            document.getElementById('banner2Url').addEventListener('input', function (event) {
+                document.getElementById('banner2Preview').src = event.target.value;
+            });
+
+            document.getElementById('bannerForm').addEventListener('submit', async function (event) {
                 event.preventDefault();
                 try {
                     await apiPut('/site-settings/ui', {
                         bannerUrl: document.getElementById('bannerUrl').value.trim(),
+                        banner2Url: document.getElementById('banner2Url').value.trim(),
                         topBarText: document.getElementById('topBarText').value.trim(),
                         topBarVisible: document.getElementById('topBarStatus').value === 'active'
                     });
-
-                    EleganceApp.renderNotice('uiNotice', 'Đã cập nhật Banner trang chủ thành công.', 'success');
+                    EleganceApp.renderNotice('uiNotice', 'Đã cập nhật Banner 1 thành công.', 'success');
                 } catch (error) {
                     EleganceApp.renderNotice('uiNotice', error.message || 'Không thể cập nhật Banner.', 'error');
+                }
+            });
+
+            document.getElementById('banner2Form').addEventListener('submit', async function (event) {
+                event.preventDefault();
+                try {
+                    await apiPut('/site-settings/ui', {
+                        bannerUrl: document.getElementById('bannerUrl').value.trim(),
+                        banner2Url: document.getElementById('banner2Url').value.trim(),
+                        topBarText: document.getElementById('topBarText').value.trim(),
+                        topBarVisible: document.getElementById('topBarStatus').value === 'active'
+                    });
+                    EleganceApp.renderNotice('uiNotice', 'Đã cập nhật Banner 2 thành công.', 'success');
+                } catch (error) {
+                    EleganceApp.renderNotice('uiNotice', error.message || 'Không thể cập nhật Banner 2.', 'error');
                 }
             });
 

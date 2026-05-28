@@ -32,7 +32,7 @@ CREATE TABLE `products` (
   PRIMARY KEY (`product_id`),
   KEY `idx_products_category_id` (`category_id`),
   CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -41,7 +41,7 @@ CREATE TABLE `products` (
 
 LOCK TABLES `products` WRITE;
 /*!40000 ALTER TABLE `products` DISABLE KEYS */;
-INSERT INTO `products` VALUES (1,'Áo sơ mi Oxford cập nhật',1,390000.00,'Mô tả sản phẩm sau khi cập nhật',1),(2,'Quần Jean Slim Fit',2,550000.00,'Dáng ôm vừa vặn',1);
+INSERT INTO `products` VALUES (1,'Áo sơ mi Oxford cập nhật',1,390000.00,'Mô tả sản phẩm sau khi cập nhật',1),(2,'Quần Jean Slim Fit',2,550000.00,'Dáng ôm vừa vặn',1),(3,'Quần Jean Xanh',2,20000.00,'Xanh nước biển',1),(4,'Quần Quần KaKi',2,3000000.00,'kaki',1),(5,'Quần đùi Jean',3,20000.00,'Mặc mát',1),(6,'Quần Short',3,20000.00,'Mặc khi mùa hè',1),(7,'Quần Short Regular',3,169000.00,'đùi',1),(8,'Áo Tanktop Regular',1,79000.00,'Mặc mát',1),(9,'Quần Jean Xanh',2,20000.00,'Mặc đi chơi',1),(10,'Quần Jean Đen',2,40000.00,'màu đne',1),(11,'Áo Polo Regular',5,149000.00,'Đi chơi',1),(12,'Áo Polo Regular L.3.3411',5,200000.00,'Đi ăn cưới',1),(13,'Áo Polo Slim',5,149000.00,'Mặc đi chơi',1);
 /*!40000 ALTER TABLE `products` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -54,4 +54,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:42
+-- Dump completed on 2026-05-29  3:39:47

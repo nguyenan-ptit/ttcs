@@ -202,7 +202,7 @@
         target.classList.remove('hidden');
     }
 
-    function applyPromoCode() {
+    async function applyPromoCode() {
         const code = normalizePromoCode(document.getElementById('promoCode').value);
         if (!code) {
             appliedPromotion = null;
@@ -212,23 +212,23 @@
             return;
         }
 
-        const promotion = EleganceApp.getDb().promotions.find((item) => normalizePromoCode(item.code) === code);
-        if (!isPromotionUsable(promotion)) {
+        try {
+            const promotion = await apiGet(`/promotions/verify/${encodeURIComponent(code)}`);
+
+            appliedPromotion = promotion;
+            checkoutDiscountValue = getPromotionDiscount(promotion);
+            updateCheckoutTotal();
+
+            if (checkoutDiscountValue > 0) {
+                showPromoMessage(`Đã áp dụng ${promotion.code}: giảm ${formatVND(checkoutDiscountValue)}.`, 'success');
+            } else {
+                showPromoMessage(`Đã ghi nhận mã ${promotion.code}.`, 'success');
+            }
+        } catch (error) {
             appliedPromotion = null;
             checkoutDiscountValue = 0;
             updateCheckoutTotal();
-            showPromoMessage('Mã giảm giá không hợp lệ hoặc đã hết hạn.', 'error');
-            return;
-        }
-
-        appliedPromotion = promotion;
-        checkoutDiscountValue = getPromotionDiscount(promotion);
-        updateCheckoutTotal();
-
-        if (checkoutDiscountValue > 0) {
-            showPromoMessage(`Đã áp dụng ${promotion.code}: giảm ${formatVND(checkoutDiscountValue)}.`, 'success');
-        } else {
-            showPromoMessage(`Đã ghi nhận mã ${promotion.code}.`, 'success');
+            showPromoMessage(error.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.', 'error');
         }
     }
 
@@ -322,7 +322,8 @@
                     address,
                     payment,
                     note: '',
-                    items: cart
+                    items: cart,
+                    promoCode: appliedPromotion?.code || null
                 });
                 localStorage.removeItem('elegance_cart');
                 // Lưu mã đơn hàng để trang success và trang đơn hàng hiển thị đúng đơn vừa đặt

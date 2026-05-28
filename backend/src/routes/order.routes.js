@@ -16,16 +16,19 @@ function parseVariantId(id) {
 router.get('/', async (req, res) => {
     const [orders] = await pool.query(`
         SELECT
-            order_id AS orderId,
-            receiver_name AS customerName,
-            receiver_phone AS phone,
-            shipping_address AS address,
-            payment_method AS payment,
-            total_amount AS totalAmount,
-            status,
-            note,
-            created_at AS date
-        FROM orders
+            o.order_id AS orderId,
+            o.receiver_name AS customerName,
+            o.receiver_phone AS phone,
+            o.shipping_address AS address,
+            o.payment_method AS payment,
+            o.total_amount AS totalAmount,
+            o.status,
+            o.note,
+            o.created_at AS date,
+            o.discount_amount AS discount,
+            pr.code AS promotionCode
+        FROM orders o
+        LEFT JOIN promotions pr ON o.promotion_id = pr.promotion_id
         ORDER BY date DESC
     `);
     res.json(orders.map((order) => ({
@@ -40,6 +43,8 @@ router.get('/', async (req, res) => {
         payment: order.payment,
         channel: 'Website',
         totalAmount: Number(order.totalAmount),
+        discount: Number(order.discount || 0),
+        promotionCode: order.promotionCode || '',
         items: [
             {
                 name: 'Tổng đơn',
@@ -55,18 +60,21 @@ router.get('/user/:userId', async (req, res) => {
     const [orders] = await pool.query(
         `
         SELECT
-            order_id AS orderId,
-            receiver_name AS customerName,
-            receiver_phone AS phone,
-            shipping_address AS address,
-            payment_method AS payment,
-            total_amount AS totalAmount,
-            status,
-            note,
-            created_at AS date
-        FROM orders
-        WHERE user_id = ?
-        ORDER BY created_at DESC
+            o.order_id AS orderId,
+            o.receiver_name AS customerName,
+            o.receiver_phone AS phone,
+            o.shipping_address AS address,
+            o.payment_method AS payment,
+            o.total_amount AS totalAmount,
+            o.status,
+            o.note,
+            o.created_at AS date,
+            o.discount_amount AS discount,
+            pr.code AS promotionCode
+        FROM orders o
+        LEFT JOIN promotions pr ON o.promotion_id = pr.promotion_id
+        WHERE o.user_id = ?
+        ORDER BY o.created_at DESC
         `,
         [userId]
     );
@@ -108,6 +116,8 @@ router.get('/user/:userId', async (req, res) => {
         payment: order.payment,
         channel: 'Website',
         totalAmount: Number(order.totalAmount),
+        discount: Number(order.discount || 0),
+        promotionCode: order.promotionCode || '',
         items: items
             .filter((item) => item.orderId === order.orderId)
             .map((item) => ({
@@ -126,17 +136,20 @@ router.get('/:id', async (req, res) => {
     const [orders] = await pool.query(
         `
         SELECT
-            order_id AS orderId,
-            receiver_name AS customerName,
-            receiver_phone AS phone,
-            shipping_address AS address,
-            payment_method AS payment,
-            total_amount AS totalAmount,
-            status,
-            note,
-            created_at AS date
-        FROM orders
-        WHERE order_id = ?
+            o.order_id AS orderId,
+            o.receiver_name AS customerName,
+            o.receiver_phone AS phone,
+            o.shipping_address AS address,
+            o.payment_method AS payment,
+            o.total_amount AS totalAmount,
+            o.status,
+            o.note,
+            o.created_at AS date,
+            o.discount_amount AS discount,
+            pr.code AS promotionCode
+        FROM orders o
+        LEFT JOIN promotions pr ON o.promotion_id = pr.promotion_id
+        WHERE o.order_id = ?
         `,
         [orderId]
     );
@@ -176,6 +189,8 @@ router.get('/:id', async (req, res) => {
         payment: order.payment,
         channel: 'Website',
         totalAmount: Number(order.totalAmount),
+        discount: Number(order.discount || 0),
+        promotionCode: order.promotionCode || '',
         items: items.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -296,7 +311,7 @@ router.patch('/:id/status', async (req, res) => {
     }
 });
 router.post('/', async (req, res) => {
-    const { userId, customerName, phone, address, payment, note, items } = req.body;
+    const { userId, customerName, phone, address, payment, note, items, promoCode } = req.body;
 
     if (!userId || !customerName || !phone || !address || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: 'Thiếu thông tin tạo đơn hàng' });
@@ -370,6 +385,41 @@ router.post('/', async (req, res) => {
             });
         }
 
+        // --- Xử lý mã giảm giá ---
+        let promotionId = null;
+        let discountAmount = 0;
+
+        if (promoCode) {
+            const code = String(promoCode).trim().toUpperCase();
+            const [promoRows] = await connection.query(
+                `
+                SELECT promotion_id, type, value, start_date, end_date, status
+                FROM promotions
+                WHERE code = ?
+                LIMIT 1
+                `,
+                [code]
+            );
+
+            if (promoRows.length > 0) {
+                const promo = promoRows[0];
+                const today = new Date().toISOString().slice(0, 10);
+                const start = new Date(promo.start_date).toISOString().slice(0, 10);
+                const end = new Date(promo.end_date).toISOString().slice(0, 10);
+
+                if (promo.status !== 'ended' && today >= start && today <= end) {
+                    promotionId = promo.promotion_id;
+                    if (promo.type === 'percent') {
+                        discountAmount = Math.round(totalAmount * Number(promo.value) / 100);
+                    } else if (promo.type === 'fixed') {
+                        discountAmount = Math.min(totalAmount, Number(promo.value));
+                    }
+                }
+            }
+        }
+
+        const finalAmount = Math.max(0, totalAmount - discountAmount);
+
         const [orderResult] = await connection.query(
             `
             INSERT INTO orders (
@@ -380,9 +430,11 @@ router.post('/', async (req, res) => {
                 payment_method,
                 total_amount,
                 status,
-                note
+                note,
+                promotion_id,
+                discount_amount
             )
-            VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)
+            VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?)
             `,
             [
                 userId,
@@ -390,8 +442,10 @@ router.post('/', async (req, res) => {
                 phone,
                 address,
                 payment || 'COD',
-                totalAmount,
-                note || null
+                finalAmount,
+                note || null,
+                promotionId,
+                discountAmount
             ]
         );
 
@@ -431,7 +485,8 @@ router.post('/', async (req, res) => {
             address,
             status: 'PENDING',
             payment: payment || 'COD',
-            totalAmount,
+            totalAmount: finalAmount,
+            discountAmount,
             note: note || '',
             items
         });

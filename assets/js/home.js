@@ -1,17 +1,10 @@
 (function () {
     const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=600&auto=format&fit=crop';
     const AO_DAI_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=600&auto=format&fit=crop';
-    const COLOR_SWATCHES = {
-        'trang': '#f8f5ec',
-        'xanh': '#2c3e50',
-        'xanh navy': '#1f3147',
-        'xanh dam': '#243b55',
-        'be': '#d2b48c',
-        'den': '#111827',
-        'kem': '#f4ead8',
-        'xam': '#8b8f98'
-    };
+
     let homeProducts = [];
+    let homeCurrentPage = 1;
+    const HOME_PRODUCTS_PER_PAGE = 12;
 
     function getVisibleProducts() {
         return homeProducts.filter((product) => product.status === 'active');
@@ -46,7 +39,7 @@
         let products = getVisibleProducts().filter((product) => {
             const matchesKeyword = !keyword || EleganceApp.normalizeText(product.name).includes(EleganceApp.normalizeText(keyword)) ||
                 EleganceApp.normalizeText(product.sku).includes(EleganceApp.normalizeText(keyword));
-            const matchesCategory = !categoryId || product.categoryId === categoryId;
+            const matchesCategory = !categoryId || String(product.categoryId) === String(categoryId);
             return matchesKeyword && matchesCategory;
         });
 
@@ -61,23 +54,32 @@
         return products;
     }
 
-    function getSwatchMarkup(productId) {
-        const product = homeProducts.find((item) => item.id === productId);
+    function getSwatchMarkup(product) {
+
         const variants = product?.variants || [];
-        const colors = [...new Set(variants.map((variant) => EleganceApp.normalizeText(variant.color)).filter(Boolean))];
+        const colors = [...new Set(variants.map((variant) => variant.color).filter(Boolean))];
 
         if (!colors.length) return '';
 
-        return colors.slice(0, 3).map((colorKey) => `
-            <div class="w-5 h-5 rounded-full border border-gray-300" style="background-color: ${COLOR_SWATCHES[colorKey] || '#e5e7eb'}"></div>
-        `).join('');
+        return colors.slice(0, 3).map((color) => {
+            const colorImage = (product?.colorImages || []).find((item) => item.color === color);
+            const imageUrl = colorImage?.imageUrl || product?.image || DEFAULT_PRODUCT_IMAGE;
+
+            return `
+                <div class="w-8 h-8 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 shadow-sm" title="${EleganceApp.escapeHtml(color)}">
+                    <img src="${EleganceApp.escapeHtml(imageUrl)}"
+                         alt="${EleganceApp.escapeHtml(color)}"
+                         class="w-full h-full object-cover">
+                </div>
+            `;
+        }).join('');
     }
 
     function buildProductCard(product) {
         const image = resolveProductImage(product);
         const detailId = encodeURIComponent(product.id);
         const escapedName = EleganceApp.escapeHtml(product.name);
-        const swatches = getSwatchMarkup(product.id);
+        const swatches = getSwatchMarkup(product);
 
         return `
             <article class="group text-center">
@@ -142,23 +144,126 @@
         const grid = document.getElementById('homeProductGrid');
         const emptyState = document.getElementById('homeProductEmpty');
         const count = document.getElementById('homeProductCount');
+        const pagination = document.getElementById('homeProductPagination');
         if (!grid || !emptyState || !count) return;
 
-        const products = getFilteredProducts();
-        count.textContent = String(products.length);
+        const allProducts = getFilteredProducts();
+        count.textContent = String(allProducts.length);
 
-        if (!products.length) {
+        if (!allProducts.length) {
             grid.innerHTML = '';
             emptyState.classList.remove('hidden');
+            if (pagination) pagination.classList.add('hidden');
             return;
         }
 
         emptyState.classList.add('hidden');
-        grid.innerHTML = products.map(buildProductCard).join('');
+
+        const totalPages = Math.ceil(allProducts.length / HOME_PRODUCTS_PER_PAGE);
+        if (homeCurrentPage > totalPages && totalPages > 0) homeCurrentPage = totalPages;
+        if (homeCurrentPage < 1) homeCurrentPage = 1;
+
+        const startIndex = (homeCurrentPage - 1) * HOME_PRODUCTS_PER_PAGE;
+        const pagedProducts = allProducts.slice(startIndex, startIndex + HOME_PRODUCTS_PER_PAGE);
+
+        grid.innerHTML = pagedProducts.map(buildProductCard).join('');
         attachImageFallbacks();
+
+        if (pagination) {
+            if (totalPages > 1) {
+                pagination.classList.remove('hidden');
+                let paginationHtml = '';
+                
+                paginationHtml += `
+                    <button type="button" onclick="setHomeProductPage(${homeCurrentPage - 1})" ${homeCurrentPage === 1 ? 'disabled' : ''} 
+                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:text-[#a87b51] hover:border-[#a87b51] disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-500 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                `;
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const isActive = i === homeCurrentPage;
+                    const activeClass = isActive ? 'bg-[#a87b51] text-white border-[#a87b51]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#a87b51] hover:text-[#a87b51]';
+                    paginationHtml += `
+                        <button type="button" onclick="setHomeProductPage(${i})" class="w-10 h-10 flex items-center justify-center rounded-xl border font-semibold transition ${activeClass}">
+                            ${i}
+                        </button>
+                    `;
+                }
+
+                paginationHtml += `
+                    <button type="button" onclick="setHomeProductPage(${homeCurrentPage + 1})" ${homeCurrentPage === totalPages ? 'disabled' : ''} 
+                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:text-[#a87b51] hover:border-[#a87b51] disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-500 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                `;
+                pagination.innerHTML = paginationHtml;
+            } else {
+                pagination.classList.add('hidden');
+            }
+        }
+    }
+
+    window.setHomeProductPage = function(page) {
+        homeCurrentPage = page;
+        renderHomeProducts();
+        
+        const grid = document.getElementById('homeProductGrid');
+        if (grid) {
+            const y = grid.getBoundingClientRect().top + window.scrollY - 100;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
+
+    async function renderStoreInfo() {
+        let info = null;
+        try {
+            info = await apiGet('/store-info');
+        } catch (error) {
+            console.error('Không thể tải thông tin cửa hàng từ API, dùng dữ liệu mẫu:', error);
+            const db = window.EleganceApp?.getDb();
+            info = db?.storeInfo;
+        }
+
+        if (!info) return;
+
+        const setTxt = (id, txt) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = txt || '';
+        };
+
+        setTxt('storeName', info.name?.toUpperCase() || 'ÉLÉGANCE');
+        setTxt('storeDesc', info.description);
+        setTxt('storeAddress', info.address);
+        setTxt('storeHotline', info.hotline);
+        setTxt('storePhone', info.phone);
+        setTxt('storeEmail', info.email);
+        setTxt('storeHours', info.openHours);
+        setTxt('storeManager', info.manager);
+
+        const fb = document.getElementById('storeFb');
+        if (fb) {
+            if (info.facebook) {
+                fb.href = info.facebook.startsWith('http') ? info.facebook : `https://${info.facebook}`;
+                fb.classList.remove('hidden');
+            } else {
+                fb.classList.add('hidden');
+            }
+        }
+
+        const insta = document.getElementById('storeInsta');
+        if (insta) {
+            if (info.instagram) {
+                insta.href = info.instagram.startsWith('http') ? info.instagram : `https://instagram.com/${info.instagram.replace('@', '')}`;
+                insta.classList.remove('hidden');
+            } else {
+                insta.classList.add('hidden');
+            }
+        }
     }
 
     async function initHomeProducts() {
+        renderStoreInfo();
         const form = document.getElementById('homeProductFilters');
         if (!form || typeof window.EleganceApp === 'undefined') return;
         try {
@@ -172,12 +277,18 @@
 
         form.addEventListener('submit', (event) => {
             event.preventDefault();
+            homeCurrentPage = 1;
             renderHomeProducts();
         });
 
-        document.getElementById('homeKeyword')?.addEventListener('input', renderHomeProducts);
-        document.getElementById('homeCategory')?.addEventListener('change', renderHomeProducts);
-        document.getElementById('homeSort')?.addEventListener('change', renderHomeProducts);
+        const resetAndRender = () => {
+            homeCurrentPage = 1;
+            renderHomeProducts();
+        };
+
+        document.getElementById('homeKeyword')?.addEventListener('input', resetAndRender);
+        document.getElementById('homeCategory')?.addEventListener('change', resetAndRender);
+        document.getElementById('homeSort')?.addEventListener('change', resetAndRender);
     }
 
     document.addEventListener('DOMContentLoaded', initHomeProducts);

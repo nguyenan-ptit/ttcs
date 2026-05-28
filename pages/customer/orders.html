@@ -90,6 +90,41 @@
         </section>
     </main>
 
+    <div id="reviewModal" class="hidden fixed inset-0 z-50 bg-black/40 items-center justify-center p-6">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Đánh giá sản phẩm</h2>
+                    <p id="reviewProductName" class="text-sm text-gray-500 mt-1"></p>
+                </div>
+                <button type="button" onclick="closeReviewModal()" class="text-2xl leading-none text-gray-400 hover:text-gray-700">&times;</button>
+            </div>
+            <form id="reviewForm" class="p-6 space-y-4">
+                <input id="reviewOrderId" type="hidden">
+                <input id="reviewProductId" type="hidden">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2" for="reviewRating">Số sao</label>
+                    <select id="reviewRating" class="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#a87b51]">
+                        <option value="5">5 sao</option>
+                        <option value="4">4 sao</option>
+                        <option value="3">3 sao</option>
+                        <option value="2">2 sao</option>
+                        <option value="1">1 sao</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2" for="reviewComment">Nội dung đánh giá</label>
+                    <textarea id="reviewComment" rows="4" maxlength="1000" class="w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#a87b51]" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm"></textarea>
+                </div>
+                <div id="reviewModalNotice" class="hidden"></div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeReviewModal()" class="rounded-xl border border-gray-200 px-5 py-3 font-semibold text-gray-600 hover:bg-gray-50 transition">Hủy</button>
+                    <button id="reviewSubmitButton" type="submit" class="rounded-xl bg-[#1a1a1a] px-5 py-3 font-semibold text-white hover:bg-[#a87b51] transition">Gửi đánh giá</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <footer class="bg-white border-t border-gray-200 py-6 mt-auto">
         <div class="container mx-auto px-6 text-center text-sm text-gray-500">
             <p>© 2026 ÉLÉGANCE. Bản quyền thuộc về Hệ thống Cửa hàng Thời trang.</p>
@@ -101,6 +136,7 @@
     <script>
         let customerOrders = [];
         let customerReturns = [];
+        let customerReviews = [];
         let selectedOrderId = '';
         let currentCustomer = null;
 
@@ -180,6 +216,39 @@
 
         function canCancelOrder(order) {
             return order.status === 'PENDING';
+        }
+
+        function hasReviewedProduct(orderId, productId) {
+            return customerReviews.some((review) => review.orderId === orderId && review.productId === productId);
+        }
+
+        function canReviewItem(order, item) {
+            const returnRequest = getReturnForOrder(order.id);
+            const isReturned = returnRequest && returnRequest.status !== 'rejected';
+            return order.status === 'DELIVERED' && !isReturned && item.productId && !hasReviewedProduct(order.id, item.productId);
+        }
+
+        function renderReviewAction(order, item) {
+            if (order.status !== 'DELIVERED' || !item.productId) {
+                return '';
+            }
+
+            const returnRequest = getReturnForOrder(order.id);
+            const isReturned = returnRequest && returnRequest.status !== 'rejected';
+            if (isReturned) {
+                return '';
+            }
+
+            if (hasReviewedProduct(order.id, item.productId)) {
+                return '<span class="inline-flex mt-3 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">Đã đánh giá</span>';
+            }
+
+            return `
+                <button type="button" onclick="openReviewModal('${order.id}', '${item.productId}')"
+                    class="inline-flex mt-3 rounded-xl border border-[#a87b51] px-4 py-2 text-sm font-semibold text-[#a87b51] hover:bg-[#a87b51] hover:text-white transition">
+                    Đánh giá
+                </button>
+            `;
         }
 
         function renderOrderList() {
@@ -276,6 +345,7 @@
                                 <div class="text-right">
                                     <p class="font-semibold text-gray-900">${EleganceApp.formatCurrency(item.price * item.qty)}</p>
                                     <p class="text-xs text-gray-400 mt-1">${EleganceApp.formatCurrency(item.price)} / sản phẩm</p>
+                                    ${renderReviewAction(order, item)}
                                 </div>
                             </div>
                         `).join('')}
@@ -398,6 +468,87 @@
             form.dataset.orderId = '';
         }
 
+        function findOrderItem(orderId, productId) {
+            const order = customerOrders.find((item) => item.id === orderId);
+            const product = order?.items.find((item) => item.productId === productId);
+
+            return { order, product };
+        }
+
+        function openReviewModal(orderId, productId) {
+            const { order, product } = findOrderItem(orderId, productId);
+
+            if (!order || !product || !canReviewItem(order, product)) {
+                EleganceApp.renderNotice('orderActionNotice', 'Sản phẩm này không thể đánh giá hoặc đã được đánh giá rồi.', 'error');
+                return;
+            }
+
+            document.getElementById('reviewOrderId').value = orderId;
+            document.getElementById('reviewProductId').value = productId;
+            document.getElementById('reviewProductName').textContent = product.name;
+            document.getElementById('reviewRating').value = '5';
+            document.getElementById('reviewComment').value = '';
+            EleganceApp.hideNotice('reviewModalNotice');
+
+            document.getElementById('reviewModal').classList.remove('hidden');
+            document.getElementById('reviewModal').classList.add('flex');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.add('hidden');
+            document.getElementById('reviewModal').classList.remove('flex');
+        }
+
+        async function submitReview(event) {
+            event.preventDefault();
+
+            if (!currentCustomer) {
+                EleganceApp.renderNotice('reviewModalNotice', 'Không tìm thấy thông tin khách hàng.', 'error');
+                return;
+            }
+
+            const orderId = document.getElementById('reviewOrderId').value;
+            const productId = document.getElementById('reviewProductId').value;
+            const rating = Number(document.getElementById('reviewRating').value);
+            const comment = document.getElementById('reviewComment').value.trim();
+            const { order, product } = findOrderItem(orderId, productId);
+            const submitButton = document.getElementById('reviewSubmitButton');
+
+            if (!order || !product || !canReviewItem(order, product)) {
+                EleganceApp.renderNotice('reviewModalNotice', 'Sản phẩm này không thể đánh giá hoặc đã được đánh giá rồi.', 'error');
+                return;
+            }
+
+            if (!comment) {
+                EleganceApp.renderNotice('reviewModalNotice', 'Vui lòng nhập nội dung đánh giá.', 'error');
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Đang gửi...';
+
+            try {
+                const review = await apiPost('/reviews', {
+                    userId: Number(currentCustomer.userId),
+                    orderId,
+                    productId,
+                    rating,
+                    comment
+                });
+
+                customerReviews.push(review);
+                closeReviewModal();
+                renderOrderList();
+                renderOrderDetail();
+                EleganceApp.renderNotice('orderActionNotice', 'Đã gửi đánh giá sản phẩm.', 'success');
+            } catch (error) {
+                EleganceApp.renderNotice('reviewModalNotice', error.message || 'Không thể gửi đánh giá.', 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Gửi đánh giá';
+            }
+        }
+
         async function loadCustomerReturns() {
             if (!currentCustomer) {
                 customerReturns = [];
@@ -406,6 +557,16 @@
 
             const userId = Number(currentCustomer.userId) || 1;
             customerReturns = await apiGet(`/returns/user/${userId}`);
+        }
+
+        async function loadCustomerReviews() {
+            if (!currentCustomer) {
+                customerReviews = [];
+                return;
+            }
+
+            const userId = Number(currentCustomer.userId) || 1;
+            customerReviews = await apiGet(`/reviews/user/${userId}`);
         }
 
         async function submitReturnRequest(orderId) {
@@ -464,6 +625,7 @@
 
                 customerOrders = orders.sort((a, b) => new Date(b.date) - new Date(a.date));
                 await loadCustomerReturns();
+                await loadCustomerReviews();
 
                 const params = new URLSearchParams(window.location.search);
                 selectedOrderId = params.get('id') || customerOrders[0]?.id || '';
@@ -484,6 +646,8 @@
                     '<div class="p-8 text-center text-gray-500">Không tải được lịch sử đơn hàng từ backend.</div>';
             }
         });
+
+        document.getElementById('reviewForm').addEventListener('submit', submitReview);
     </script>
 </body>
 

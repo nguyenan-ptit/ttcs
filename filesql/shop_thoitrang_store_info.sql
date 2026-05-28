@@ -45,7 +45,7 @@ CREATE TABLE `store_info` (
 
 LOCK TABLES `store_info` WRITE;
 /*!40000 ALTER TABLE `store_info` DISABLE KEYS */;
-INSERT INTO `store_info` VALUES (1,'Elegance Cầu Giấy','Lê Thị Lan','1900 1234','0988 111 222','support@elegance.vn','09:00 - 22:00','123 Cầu Giấy, Hà Nội','facebook.com/elegance.vn','@elegance.vn','Cửa hàng thời trang smart casual.','Đổi size trong 7 ngày cho sản phẩm còn tem.');
+INSERT INTO `store_info` VALUES (1,'Elegance Nam Từ Liêm','Lê Thị Lan','1900 1234','0988 111 22','support@elegance.vn','09:00 - 22:09','123 Cầu Giấy, Hà Nộ','@elegance','@elegance','Cửa hàng thời trang smart casual.','Đổi size trong 7 ngày cho sản phẩm còn tem.');
 /*!40000 ALTER TABLE `store_info` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -58,4 +58,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:48

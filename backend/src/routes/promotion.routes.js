@@ -229,4 +229,53 @@ router.patch('/:id/status', async (req, res) => {
         status
     });
 });
+router.get('/verify/:code', async (req, res) => {
+    const code = String(req.params.code || '').trim().toUpperCase();
+
+    if (!code) {
+        return res.status(400).json({ message: 'Thiếu mã giảm giá' });
+    }
+
+    const [rows] = await pool.query(
+        `
+        SELECT
+            promotion_id AS promotionId,
+            name,
+            code,
+            type,
+            value,
+            start_date AS startDate,
+            end_date AS endDate,
+            status
+        FROM promotions
+        WHERE code = ?
+        LIMIT 1
+        `,
+        [code]
+    );
+
+    if (rows.length === 0) {
+        return res.status(404).json({ message: 'Mã giảm giá không tồn tại' });
+    }
+
+    const promo = rows[0];
+
+    if (promo.status === 'ended') {
+        return res.status(400).json({ message: 'Mã giảm giá đã kết thúc' });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const start = new Date(promo.startDate).toISOString().slice(0, 10);
+    const end = new Date(promo.endDate).toISOString().slice(0, 10);
+
+    if (today < start) {
+        return res.status(400).json({ message: 'Mã giảm giá chưa bắt đầu' });
+    }
+    if (today > end) {
+        return res.status(400).json({ message: 'Mã giảm giá đã hết hạn' });
+    }
+
+    res.json(mapPromotion(promo));
+});
+
 module.exports = router;

@@ -36,7 +36,7 @@ CREATE TABLE `site_settings` (
 
 LOCK TABLES `site_settings` WRITE;
 /*!40000 ALTER TABLE `site_settings` DISABLE KEYS */;
-INSERT INTO `site_settings` VALUES ('bannerUrl','https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=1200&auto=format&fit=crop','2026-05-28 12:18:28.828043'),('topBarText','Độc quyền online: Miễn phí vận chuyển cho đơn hàng từ 500.000đ','2026-05-28 12:18:28.828043'),('topBarVisible','1','2026-05-28 12:18:28.828043');
+INSERT INTO `site_settings` VALUES ('banner2Url','https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=85&w=2400&auto=format&fit=crop','2026-05-29 03:30:10.819328'),('bannerUrl','https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=1200&auto=format&fit=crop','2026-05-29 03:15:31.587637'),('topBarText','Độc quyền online: Miễn phí vận chuyển cho đơn hàng từ 1.500.000đ','2026-05-29 03:14:33.732358'),('topBarVisible','1','2026-05-29 03:15:44.053386');
 /*!40000 ALTER TABLE `site_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -49,4 +49,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:48

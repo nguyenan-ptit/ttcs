@@ -11,6 +11,7 @@ const storeRoutes = require('./routes/store.routes');
 const siteSettingRoutes = require('./routes/site-setting.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const returnRoutes = require('./routes/return.routes');
+const reviewRoutes = require('./routes/review.routes');
 const app = express();
 
 app.use(cors());
@@ -22,6 +23,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/returns', returnRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/store-info', storeRoutes);

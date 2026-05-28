@@ -150,27 +150,39 @@
                         <td>
                             <div class="flex flex-wrap gap-3">
                                 <button onclick="openPromotionForm('${promotion.id}')" class="text-[#a87b51] font-medium">Sửa</button>
-                                <button onclick="hidePromotion('${promotion.id}')" class="text-amber-700 font-medium">Ẩn</button>
+                                <button onclick="togglePromotion('${promotion.id}')" class="text-amber-700 font-medium">
+                                        ${promotion.status === 'ended' ? 'Hiện' : 'Ẩn'}
+                                </button>
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('') || '<tr><td colspan="7" class="empty-state">Chưa có chương trình khuyến mãi.</td></tr>';
         }
-        async function hidePromotion(promotionId) {
-            if (!confirm('Bạn chắc chắn muốn ẩn chương trình khuyến mãi này?')) return;
+        async function togglePromotion(promotionId) {
+            const promotion = promotions.find((item) => item.id === promotionId);
+
+            if (!promotion) {
+                EleganceApp.renderNotice('promotionNotice', 'Không tìm thấy chương trình khuyến mãi.', 'error');
+                return;
+            }
+
+            const nextStatus = promotion.status === 'ended' ? 'active' : 'ended';
+            const actionLabel = nextStatus === 'active' ? 'hiện' : 'ẩn';
+
+
 
             try {
                 await apiPatch(`/promotions/${promotionId}/status`, {
-                    status: 'ended'
+                    status: nextStatus
                 });
 
-                EleganceApp.renderNotice('promotionNotice', 'Đã ẩn chương trình khuyến mãi.', 'success');
+                EleganceApp.renderNotice('promotionNotice', `Đã ${actionLabel} chương trình khuyến mãi.`, 'success');
                 await loadPromotions();
             } catch (error) {
                 EleganceApp.renderNotice(
                     'promotionNotice',
-                    error.message || 'Không thể ẩn khuyến mãi.',
+                    error.message || 'Không thể cập nhật trạng thái khuyến mãi.',
                     'error'
                 );
             }

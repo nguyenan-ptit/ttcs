@@ -24,11 +24,12 @@ DROP TABLE IF EXISTS `categories`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `categories` (
   `category_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category_name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `size_type` enum('LETTER','NUMBER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LETTER',
   PRIMARY KEY (`category_id`),
-  UNIQUE KEY `uk_categories_name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `uk_categories_name` (`category_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -37,7 +38,7 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` VALUES (1,'Áo Sơ Mi X',1),(2,'Quần Jean',1),(3,'Quần đùi',1);
+INSERT INTO `categories` VALUES (1,'Áo Sơ Mi X',1,'LETTER'),(2,'Quần Jean',1,'NUMBER'),(3,'Quần đùi',1,'NUMBER'),(4,'Áo ba lỗ',1,'LETTER'),(5,'Áo polo',1,'LETTER');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -50,4 +51,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:47

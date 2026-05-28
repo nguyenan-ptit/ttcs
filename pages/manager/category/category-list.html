@@ -37,8 +37,9 @@
         <header class="dashboard-header">
             <div>
                 <h1 class="dashboard-header-title">Quản lý danh mục</h1>
-                <p class="dashboard-header-copy">Thêm mới, sửa và xóa các danh mục sản phẩm.</p>
+                <p class="dashboard-header-copy">Thêm mới, sửa và ẩn các danh mục sản phẩm.</p>
             </div>
+
             <button onclick="openCategoryForm()" class="btn-primary">Thêm danh mục</button>
         </header>
 
@@ -87,6 +88,13 @@
                             <option value="draft">Bản nháp</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="form-label" for="categorySizeType">Kiểu size</label>
+                        <select class="form-select" id="categorySizeType">
+                            <option value="LETTER">Size chữ: S, M, L, XL</option>
+                            <option value="NUMBER">Size số: 28, 29, 30, 31</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeCategoryForm()" class="btn-secondary">Hủy</button>
@@ -102,7 +110,7 @@
         let categories = [];
         async function loadCategories() {
             categories = await apiGet('/products/categories');
-           renderCategoryTable()
+            renderCategoryTable();
         }
         function getCategoryMeta(status) {
             return status === 'active'
@@ -140,12 +148,13 @@
                 ? categories.find((item) => Number(item.categoryId) === Number(categoryId))
                 : null;
 
-                document.getElementById('categoryModalTitle').textContent = category ? 'Sửa danh mục' : 'Thêm danh mục';
-                document.getElementById('categoryId').value = category?.categoryId || '';
-                document.getElementById('categoryName').value = category?.name || '';
-                document.getElementById('categoryStatus').value = category?.status || 'active';
-                document.getElementById('categoryModal').classList.remove('hidden');
-                document.getElementById('categoryModal').classList.add('flex');
+            document.getElementById('categoryModalTitle').textContent = category ? 'Sửa danh mục' : 'Thêm danh mục';
+            document.getElementById('categoryId').value = category?.categoryId || '';
+            document.getElementById('categoryName').value = category?.name || '';
+            document.getElementById('categoryStatus').value = category?.status || 'active';
+            document.getElementById('categorySizeType').value = category?.sizeType || 'LETTER';
+            document.getElementById('categoryModal').classList.remove('hidden');
+            document.getElementById('categoryModal').classList.add('flex');
         }
 
         function closeCategoryForm() {
@@ -160,28 +169,29 @@
                 EleganceApp.renderNotice('categoryNotice', 'Không tìm thấy danh mục.', 'error');
                 return;
             }
-        const nextIsActive = category.status === 'draft';
+            const nextIsActive = category.status === 'draft';
 
-        try {
-            await apiPatch(`/products/categories/${categoryId}/status`, {
-                isActive: nextIsActive
-            });
+            try {
+                await apiPatch(`/products/categories/${categoryId}/status`, {
+                    isActive: nextIsActive
+                });
 
-            EleganceApp.renderNotice(
-                'categoryNotice',
-                nextIsActive ? 'Đã hiện danh mục.' : 'Đã ẩn danh mục.',
-                'success'
-            );
+                EleganceApp.renderNotice(
+                    'categoryNotice',
+                    nextIsActive ? 'Đã hiện danh mục.' : 'Đã ẩn danh mục.',
+                    'success'
+                );
 
-            await loadCategories();
-        } catch (error) {
-            EleganceApp.renderNotice(
-                'categoryNotice',
-                error.message || 'Không thể cập nhật trạng thái danh mục.',
-                'error'
-            );
+                await loadCategories();
+            } catch (error) {
+                EleganceApp.renderNotice(
+                    'categoryNotice',
+                    error.message || 'Không thể cập nhật trạng thái danh mục.',
+                    'error'
+                );
+            }
         }
-    }
+
         document.addEventListener('DOMContentLoaded', () => {
             const user = EleganceApp.ensureRole(['MANAGER'], '../../auth/login.html');
             if (!user) return;
@@ -192,49 +202,47 @@
                 renderCategoryTable();
             });
 
-            document.getElementById('categoryForm').addEventListener('submit',async (event) => {
+            document.getElementById('categoryForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const id = document.getElementById('categoryId').value;
                 const payload = {
                     name: document.getElementById('categoryName').value.trim(),
-                    status: document.getElementById('categoryStatus').value
+                    status: document.getElementById('categoryStatus').value,
+                    sizeType: document.getElementById('categorySizeType').value
                 };
 
                 try {
-                if (id) {
-                    await apiPut(`/products/categories/${id}`, {
-                        name: payload.name
-                    });
+                    if (id) {
+                        await apiPut(`/products/categories/${id}`, {
+                            name: payload.name,
+                            sizeType: payload.sizeType
+                        });
 
-                    await apiPatch(`/products/categories/${id}/status`, {
-                        isActive: payload.status === 'active'
-                    });
-                } else {
-                    await apiPost('/products/categories', {
-                        name: payload.name
-                    });
+                        await apiPatch(`/products/categories/${id}/status`, {
+                            isActive: payload.status === 'active'
+                        });
+                    } else {
+                        await apiPost('/products/categories', {
+                            name: payload.name,
+                            sizeType: payload.sizeType
+                        });
+                    }
+
+                    closeCategoryForm();
+                    EleganceApp.renderNotice(
+                        'categoryNotice',
+                        id ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.',
+                        'success'
+                    );
+
+                    await loadCategories();
+                } catch (error) {
+                    EleganceApp.renderNotice(
+                        'categoryNotice',
+                        error.message || 'Không thể lưu danh mục.',
+                        'error'
+                    );
                 }
-
-    closeCategoryForm();
-
-    EleganceApp.renderNotice(
-        'categoryNotice',
-        id ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.',
-        'success'
-    );
-
-    await loadCategories();
-} catch (error) {
-    EleganceApp.renderNotice(
-        'categoryNotice',
-        error.message || 'Không thể lưu danh mục.',
-        'error'
-    );
-}
-
-                closeCategoryForm();
-                EleganceApp.renderNotice('categoryNotice', id ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục mới.', 'success');
-                renderCategoryTable();
             });
 
             loadCategories();
@@ -243,3 +251,4 @@
 </body>
 
 </html>
+

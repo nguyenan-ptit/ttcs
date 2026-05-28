@@ -61,9 +61,12 @@
         </div>
     </main>
 
+    <script src="../../assets/js/api.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script>
-        const feedbacks = [
+        let feedbacks = [];
+        let currentSaleUser = null;
+        const sampleFeedbacks = [
             {
                 id: 'FB-001',
                 customer: 'Hoàng Văn Nam',
@@ -87,7 +90,7 @@
             }
         ];
 
-        function renderFeedbacks() {
+function renderSampleFeedbacks() {
             document.getElementById('feedbackList').innerHTML = feedbacks.map((feedback) => `
                 <article class="quick-list-item">
                     <div class="flex-1">
@@ -106,7 +109,7 @@
             `).join('');
         }
 
-        function replyFeedback(id) {
+function replySampleFeedback(id) {
             const input = document.getElementById(`reply-${id}`);
             if (!input.value.trim()) {
                 EleganceApp.renderNotice('feedbackNotice', 'Vui lòng nhập nội dung phản hồi trước khi gửi.', 'error');
@@ -117,12 +120,95 @@
             input.value = '';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        function escapeFeedbackText(value) {
+            return EleganceApp.escapeHtml(String(value || ''));
+        }
+
+        function getFeedbackStatusMeta(status) {
+            return status === 'replied'
+                ? { className: 'badge-success', label: 'Đã phản hồi' }
+                : { className: 'badge-warning', label: 'Chờ phản hồi' };
+        }
+
+        async function loadFeedbacks() {
+            try {
+                feedbacks = await apiGet('/reviews');
+                renderFeedbacks();
+            } catch (error) {
+                EleganceApp.renderNotice('feedbackNotice', error.message, 'error');
+            }
+        }
+
+        function renderFeedbacks() {
+            const listEl = document.getElementById('feedbackList');
+
+            if (!feedbacks.length) {
+                listEl.innerHTML = '<div class="empty-state">Chưa có đánh giá nào cần phản hồi.</div>';
+                return;
+            }
+
+            listEl.innerHTML = feedbacks.map((feedback) => {
+                const meta = getFeedbackStatusMeta(feedback.status);
+                const replyValue = feedback.replyContent || '';
+
+                return `
+                    <article class="quick-list-item">
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <h2 class="font-semibold text-gray-900">${feedback.id} - ${escapeFeedbackText(feedback.customerName)}</h2>
+                                <span class="badge badge-gold">${feedback.rating}/5 sao</span>
+                                <span class="badge ${meta.className}">${meta.label}</span>
+                                <span class="text-sm text-gray-500">${escapeFeedbackText(feedback.productName)}</span>
+                                ${feedback.orderId ? `<span class="text-sm text-gray-500">${feedback.orderId}</span>` : ''}
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">${EleganceApp.formatDate(feedback.date)}</p>
+                            <p class="text-sm text-gray-600 mt-3">${escapeFeedbackText(feedback.content)}</p>
+                            ${replyValue ? `
+                                <div class="mt-4 rounded-xl border border-green-100 bg-green-50 px-4 py-3">
+                                    <p class="text-xs uppercase font-semibold text-green-700">Phản hồi hiện tại</p>
+                                    <p class="text-sm text-green-800 mt-2">${escapeFeedbackText(replyValue)}</p>
+                                    <p class="text-xs text-green-700 mt-2">${escapeFeedbackText(feedback.replyStaff || 'Nhân viên bán hàng')}</p>
+                                </div>
+                            ` : ''}
+                            <div class="mt-4 grid md:grid-cols-[1fr_auto] gap-3">
+                                <input id="reply-${feedback.id}" class="form-input" type="text" value="${escapeFeedbackText(replyValue)}" placeholder="Nhập nội dung phản hồi">
+                                <button class="btn-primary" type="button" onclick="replyFeedback('${feedback.id}')">Gửi phản hồi</button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function replyFeedback(id) {
+            const input = document.getElementById(`reply-${id}`);
+            const replyContent = input?.value.trim();
+
+            if (!replyContent) {
+                EleganceApp.renderNotice('feedbackNotice', 'Vui lòng nhập nội dung phản hồi trước khi gửi.', 'error');
+                input?.focus();
+                return;
+            }
+
+            try {
+                await apiPatch(`/reviews/${id}/reply`, {
+                    userId: Number(currentSaleUser.userId),
+                    replyContent
+                });
+                EleganceApp.renderNotice('feedbackNotice', `Đã ghi nhận phản hồi cho đánh giá ${id}.`, 'success');
+                await loadFeedbacks();
+            } catch (error) {
+                EleganceApp.renderNotice('feedbackNotice', error.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = EleganceApp.ensureRole(['SALE'], '../auth/login.html');
             if (!user) return;
+            currentSaleUser = user;
             document.getElementById('saleUserName').textContent = user.name;
             EleganceApp.hydrateUser('saleHeaderName', 'saleAvatar', user.name);
-            renderFeedbacks();
+            await loadFeedbacks();
         });
     </script>
 </body>

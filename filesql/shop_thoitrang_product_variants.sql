@@ -32,7 +32,7 @@ CREATE TABLE `product_variants` (
   PRIMARY KEY (`variant_id`),
   UNIQUE KEY `uk_product_variant_color_size` (`product_id`,`color`,`size`),
   CONSTRAINT `fk_variants_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=94 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -41,7 +41,7 @@ CREATE TABLE `product_variants` (
 
 LOCK TABLES `product_variants` WRITE;
 /*!40000 ALTER TABLE `product_variants` DISABLE KEYS */;
-INSERT INTO `product_variants` VALUES (1,1,'Trắng','M',32,1),(2,1,'Trắng','L',20,1),(3,2,'Xanh','30',5,0),(4,2,'Hồng','S',27,1);
+INSERT INTO `product_variants` VALUES (3,2,'Ghi','30',5,1),(7,1,'Tiêu','S',16,1),(8,1,'Tiêu','M',0,1),(9,1,'Tiêu','L',0,1),(10,1,'Tiêu','XL',16,1),(11,1,'đen','S',0,1),(12,1,'đen','M',0,1),(13,1,'đen','L',0,1),(14,1,'đen','XL',0,1),(15,4,'Be','28',0,1),(16,4,'Be','29',0,1),(17,4,'Be','30',0,1),(18,4,'Be','31',0,1),(19,4,'Nâu','28',0,1),(20,4,'Nâu','29',0,1),(21,4,'Nâu','30',0,1),(22,4,'Nâu','31',0,1),(23,4,'Ghi','28',0,1),(24,4,'Ghi','29',0,1),(25,4,'Ghi','30',0,1),(26,4,'Ghi','31',0,1),(27,5,'Be','28',0,1),(28,5,'Be','29',0,1),(29,5,'Be','30',0,1),(30,5,'Be','31',0,1),(31,5,'Đen','28',0,1),(32,5,'Đen','29',0,1),(33,5,'Đen','30',0,1),(34,5,'Đen','31',0,1),(35,6,'Trắng','28',0,1),(36,6,'Trắng','29',0,1),(37,6,'Trắng','30',0,1),(38,6,'Trắng','31',0,1),(39,7,'Tiêu','28',0,1),(40,7,'Tiêu','29',0,1),(41,7,'Tiêu','30',0,1),(42,7,'Tiêu','31',0,1),(43,8,'Đên','S',0,1),(44,8,'Đên','M',0,1),(45,8,'Đên','L',0,1),(46,8,'Đên','XL',0,1),(47,8,'Nâu','S',0,1),(48,8,'Nâu','M',0,1),(49,8,'Nâu','L',0,1),(50,8,'Nâu','XL',0,1),(51,4,'Đen','28',0,1),(52,4,'Đen','29',0,1),(53,4,'Đen','30',0,1),(54,4,'Đen','31',0,1),(55,9,'Xanh','28',0,1),(56,9,'Xanh','29',0,1),(57,9,'Xanh','30',0,1),(58,9,'Xanh','31',0,1),(59,3,'Xanh','28',0,1),(60,3,'Xanh','29',0,1),(61,3,'Xanh','30',0,1),(62,3,'Xanh','31',0,1),(63,3,'Đen','28',0,0),(64,3,'Đen','29',0,0),(65,3,'Đen','30',0,0),(66,3,'Đen','31',0,0),(67,2,'Ghi','28',0,1),(68,2,'Ghi','29',0,1),(69,2,'Ghi','31',0,1),(70,2,'Hồng','28',0,0),(71,2,'Hồng','29',0,0),(72,2,'Hồng','30',0,0),(73,2,'Hồng','31',0,0),(74,10,'Đen','28',0,1),(75,10,'Đen','29',0,1),(76,10,'Đen','30',0,1),(77,10,'Đen','31',0,1),(78,11,'Đen','S',5,1),(79,11,'Đen','M',5,1),(80,11,'Đen','L',6,1),(81,11,'Đen','XL',5,1),(82,11,'Tiêu','S',7,1),(83,11,'Tiêu','M',4,1),(84,11,'Tiêu','L',4,1),(85,11,'Tiêu','XL',4,1),(86,12,'Đen','S',0,1),(87,12,'Đen','M',4,1),(88,12,'Đen','L',0,1),(89,12,'Đen','XL',0,1),(90,13,'Đen','S',5,1),(91,13,'Đen','M',3,1),(92,13,'Đen','L',1,1),(93,13,'Đen','XL',6,1);
 /*!40000 ALTER TABLE `product_variants` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -54,4 +54,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:44
+-- Dump completed on 2026-05-29  3:39:50

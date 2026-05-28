@@ -34,10 +34,14 @@ CREATE TABLE `orders` (
   `status` enum('PENDING','CONFIRMED','SHIPPING','DELIVERED','DELIVERY_FAILED','CANCELLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING',
   `note` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `promotion_id` bigint(20) DEFAULT NULL,
+  `discount_amount` decimal(15,2) DEFAULT '0.00',
   PRIMARY KEY (`order_id`),
   KEY `idx_orders_user_id` (`user_id`),
+  KEY `fk_order_promotion` (`promotion_id`),
+  CONSTRAINT `fk_order_promotion` FOREIGN KEY (`promotion_id`) REFERENCES `promotions` (`promotion_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -46,7 +50,7 @@ CREATE TABLE `orders` (
 
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
-INSERT INTO `orders` VALUES (1,5,'Hoàng Văn Nam','0912345678','Số 123, Đường Láng, Đống Đa, Hà Nội','COD','Website',350000.00,'DELIVERED',NULL,'2026-05-03 02:53:58.984327'),(2,5,'Hoàng Văn Nam','0912345678','Số 123, Đường Láng, Đống Đa, Hà Nội','BANK_TRANSFER','Website',550000.00,'DELIVERY_FAILED','Test xac nhan don tu API.','2026-05-03 02:53:58.984327'),(6,1,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',350000.00,'DELIVERED',NULL,'2026-05-24 19:52:41.034076'),(7,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',390000.00,'DELIVERED',NULL,'2026-05-25 04:29:42.330137'),(8,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',940000.00,'CANCELLED',NULL,'2026-05-28 14:53:58.882167');
+INSERT INTO `orders` VALUES (2,5,'Hoàng Văn Nam','0912345678','Số 123, Đường Láng, Đống Đa, Hà Nội','BANK_TRANSFER','Website',550000.00,'DELIVERY_FAILED','Test xac nhan don tu API.','2026-05-03 02:53:58.984327',NULL,0.00),(6,1,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',350000.00,'DELIVERED',NULL,'2026-05-24 19:52:41.034076',NULL,0.00),(10,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',1560000.00,'DELIVERED',NULL,'2026-05-29 00:25:25.726759',NULL,0.00),(11,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',390000.00,'DELIVERED',NULL,'2026-05-29 00:35:14.096698',NULL,0.00),(12,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',410000.00,'DELIVERED',NULL,'2026-05-29 00:48:56.502551',NULL,0.00),(13,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',273000.00,'DELIVERED',NULL,'2026-05-29 02:18:25.077105',1,117000.00),(14,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',390000.00,'CANCELLED',NULL,'2026-05-29 02:35:17.874900',NULL,0.00),(15,5,'Hoàng Văn Nam','0912345678','123 Cầu Giấy, Hà Nội','COD','Website',390000.00,'DELIVERED',NULL,'2026-05-29 02:39:45.173044',NULL,0.00);
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -59,4 +63,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:47

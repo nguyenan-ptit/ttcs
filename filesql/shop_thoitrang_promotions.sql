@@ -43,7 +43,7 @@ CREATE TABLE `promotions` (
 
 LOCK TABLES `promotions` WRITE;
 /*!40000 ALTER TABLE `promotions` DISABLE KEYS */;
-INSERT INTO `promotions` VALUES (1,'Ngày khai chương','KHAICHUONG','percent',30.00,'2026-05-06','2026-05-28','active','2026-05-28 11:12:20.978652');
+INSERT INTO `promotions` VALUES (1,'Ngày khai chương','KHAICHUONG','percent',30.00,'2026-05-01','2026-05-31','active','2026-05-28 11:12:20.978652');
 /*!40000 ALTER TABLE `promotions` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -56,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-28 17:43:43
+-- Dump completed on 2026-05-29  3:39:48
