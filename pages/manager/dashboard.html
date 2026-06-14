@@ -73,8 +73,14 @@
                     <div id="metricOrders" class="metric-value">0</div>
                     <div class="metric-footnote">Tổng số đơn hàng đã ghi nhận trong hệ thống.</div>
                 </div>
+                <div class="metric-card">
+                    <div class="metric-label">Tỷ lệ trả hàng</div>
+                    <div id="metricReturnRate" class="metric-value">0%</div>
+                    <div id="metricReturnCount" class="metric-footnote">
+                        0 đơn đã trả hàng thành công.
+                    </div>
+                </div>
             </div>
-
 
             <div class="grid xl:grid-cols-[1.1fr_0.9fr] gap-8">
 <!--                <section class="surface-card">-->
@@ -156,7 +162,9 @@
             document.getElementById('metricOrders').textContent = summary.totalOrders;
             document.getElementById('metricRevenue').textContent = EleganceApp.formatCurrency(summary.totalRevenue);
             document.getElementById('metricLowStock').textContent = summary.lowStockProducts;
-
+            document.getElementById('metricReturnRate').textContent = `${summary.returnRate}%`;
+            document.getElementById('metricReturnCount').textContent =
+                `${summary.returnedOrders} đơn đã trả hàng thành công.`;
             const dashboardTasks = document.getElementById('dashboardTasks');
 
             EleganceReports.renderBarChart('dashboardCategoryChart', revenueByCategory, (value) => EleganceApp.formatCurrency(value));
