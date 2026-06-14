@@ -3,6 +3,32 @@ const pool = require('../data/mysql');
 
 const router = express.Router();
 
+const excludeCompletedReturns = `
+    AND NOT EXISTS (
+        SELECT 1
+        FROM returns r
+        WHERE r.order_id = o.order_id
+          AND r.status = 'APPROVED'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM order_details returned_od
+              WHERE returned_od.order_id = o.order_id
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM inventory_logs il
+                    JOIN users log_user
+                      ON log_user.user_id = il.user_id
+                    JOIN roles log_role
+                      ON log_role.role_id = log_user.role_id
+                    WHERE il.variant_id = returned_od.variant_id
+                      AND il.type = 'ORDER_CANCEL_RETURN'
+                      AND log_role.role_name = 'WAREHOUSE'
+                      AND il.quantity >= returned_od.quantity
+                      AND il.created_at >= r.created_at
+                )
+          )
+    )
+`;
 router.get('/dashboard', async (req, res) => {
     try {
         const [[totalProductsRow]] = await pool.query(`
@@ -22,11 +48,47 @@ router.get('/dashboard', async (req, res) => {
         `);
 
         const [[revenueRow]] = await pool.query(`
-            SELECT COALESCE(SUM(total_amount), 0) AS totalRevenue
-            FROM orders
-            WHERE status = 'DELIVERED'
+            SELECT COALESCE(SUM(o.total_amount), 0) AS totalRevenue
+            FROM orders o
+            WHERE o.status = 'DELIVERED'
+            ${excludeCompletedReturns}
         `);
-
+        const [[returnRateRow]] = await pool.query(`
+            SELECT
+                COUNT(*) AS deliveredOrders,
+                SUM(
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM returns r
+                            WHERE r.order_id = o.order_id
+                              AND r.status = 'APPROVED'
+                              AND NOT EXISTS (
+                                  SELECT 1
+                                  FROM order_details od
+                                  WHERE od.order_id = o.order_id
+                                    AND NOT EXISTS (
+                                        SELECT 1
+                                        FROM inventory_logs il
+                                        JOIN users log_user
+                                          ON log_user.user_id = il.user_id
+                                        JOIN roles log_role
+                                          ON log_role.role_id = log_user.role_id
+                                        WHERE il.variant_id = od.variant_id
+                                          AND il.type = 'ORDER_CANCEL_RETURN'
+                                          AND log_role.role_name = 'WAREHOUSE'
+                                          AND il.quantity >= od.quantity
+                                          AND il.created_at >= r.created_at
+                                    )
+                              )
+                        )
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS returnedOrders
+            FROM orders o
+            WHERE o.status = 'DELIVERED'
+        `);
         const [[lowStockRow]] = await pool.query(`
             SELECT COUNT(*) AS lowStockProducts
             FROM (
@@ -36,13 +98,20 @@ router.get('/dashboard', async (req, res) => {
             ) product_stock
             WHERE totalStock <= 10
         `);
+        const deliveredOrders = Number(returnRateRow.deliveredOrders || 0);
+        const returnedOrders = Number(returnRateRow.returnedOrders || 0);
 
+        const returnRate = deliveredOrders > 0
+            ? Math.round((returnedOrders / deliveredOrders) * 100)
+            : 0;
         res.json({
             totalProducts: Number(totalProductsRow.totalProducts),
             activeProducts: Number(activeProductsRow.activeProducts),
             totalOrders: Number(totalOrdersRow.totalOrders),
             totalRevenue: Number(revenueRow.totalRevenue),
-            lowStockProducts: Number(lowStockRow.lowStockProducts)
+            lowStockProducts: Number(lowStockRow.lowStockProducts),
+            returnedOrders,
+            returnRate
         });
     } catch (error) {
         console.error(error);
@@ -116,6 +185,7 @@ router.get('/revenue-by-category', async (req, res) => {
             JOIN products p ON p.product_id = pv.product_id
             JOIN categories c ON c.category_id = p.category_id
             WHERE o.status = 'DELIVERED'
+            ${excludeCompletedReturns}
             GROUP BY c.category_id, c.category_name
 
             ORDER BY value DESC
@@ -139,6 +209,7 @@ router.get('/top-customers', async (req, res) => {
             FROM orders o
             JOIN users u ON u.user_id = o.user_id
             WHERE o.status = 'DELIVERED'
+            ${excludeCompletedReturns}
             GROUP BY u.user_id, u.full_name
             ORDER BY value DESC
             LIMIT 5
