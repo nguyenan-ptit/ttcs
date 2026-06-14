@@ -1,9 +1,72 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const pool = require('../data/mysql');
-
+const { requireAuth } = require('../middlewares/auth.middleware');
 const router = express.Router();
 
+router.put('/change-password', requireAuth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+            message: 'Vui lòng nhập đầy đủ mật khẩu'
+        });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({
+            message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+        });
+    }
+
+    try {
+        const [users] = await pool.query(
+            `
+            SELECT password
+            FROM users
+            WHERE user_id = ?
+            `,
+            [req.user.userId]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                message: 'Không tìm thấy tài khoản'
+            });
+        }
+
+        if (currentPassword !== users[0].password) {
+            return res.status(400).json({
+                message: 'Mật khẩu hiện tại không đúng'
+            });
+        }
+
+        if (currentPassword === newPassword) {
+            return res.status(400).json({
+                message: 'Mật khẩu mới phải khác mật khẩu hiện tại'
+            });
+        }
+
+        await pool.query(
+            `
+            UPDATE users
+            SET password = ?
+            WHERE user_id = ?
+            `,
+            [newPassword, req.user.userId]
+        );
+
+        return res.json({
+            message: 'Đổi mật khẩu thành công'
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            message: 'Không thể đổi mật khẩu'
+        });
+    }
+});
 function createToken(user) {
     return jwt.sign(
         {

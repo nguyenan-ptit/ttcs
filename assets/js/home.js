@@ -5,6 +5,11 @@
     let homeProducts = [];
     let homeCurrentPage = 1;
     const HOME_PRODUCTS_PER_PAGE = 12;
+    let appliedFilters = {
+        keyword: '',
+        categoryId: '',
+        sort: 'newest'
+    };
 
     function getVisibleProducts() {
         return homeProducts.filter((product) => product.status === 'active');
@@ -32,9 +37,7 @@
     }
 
     function getFilteredProducts() {
-        const keyword = document.getElementById('homeKeyword')?.value || '';
-        const categoryId = document.getElementById('homeCategory')?.value || '';
-        const sort = document.getElementById('homeSort')?.value || 'newest';
+        const { keyword, categoryId, sort } = appliedFilters;
 
         let products = getVisibleProducts().filter((product) => {
             const matchesKeyword = !keyword || EleganceApp.normalizeText(product.name).includes(EleganceApp.normalizeText(keyword)) ||
@@ -220,9 +223,8 @@
         try {
             info = await apiGet('/store-info');
         } catch (error) {
-            console.error('Không thể tải thông tin cửa hàng từ API, dùng dữ liệu mẫu:', error);
-            const db = window.EleganceApp?.getDb();
-            info = db?.storeInfo;
+            console.error('Không thể tải thông tin cửa hàng:', error);
+            return;
         }
 
         if (!info) return;
@@ -239,6 +241,7 @@
         setTxt('storePhone', info.phone);
         setTxt('storeEmail', info.email);
         setTxt('storeHours', info.openHours);
+        setTxt('storePolicy', info.policy);
         setTxt('storeManager', info.manager);
 
         const fb = document.getElementById('storeFb');
@@ -277,18 +280,14 @@
 
         form.addEventListener('submit', (event) => {
             event.preventDefault();
+            appliedFilters = {
+                keyword: document.getElementById('homeKeyword')?.value.trim() || '',
+                categoryId: document.getElementById('homeCategory')?.value || '',
+                sort: document.getElementById('homeSort')?.value || 'newest'
+            };
             homeCurrentPage = 1;
             renderHomeProducts();
         });
-
-        const resetAndRender = () => {
-            homeCurrentPage = 1;
-            renderHomeProducts();
-        };
-
-        document.getElementById('homeKeyword')?.addEventListener('input', resetAndRender);
-        document.getElementById('homeCategory')?.addEventListener('change', resetAndRender);
-        document.getElementById('homeSort')?.addEventListener('change', resetAndRender);
     }
 
     document.addEventListener('DOMContentLoaded', initHomeProducts);

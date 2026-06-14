@@ -233,17 +233,29 @@
     }
 
     // 2. Load dữ liệu khi vào trang
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded',async () => {
         // Kiểm tra user đăng nhập
         const currentUser = EleganceApp.ensureRole(['CUSTOMER'], '../auth/login.html');
         if (!currentUser) {
             return;
         }
         // Điền sẵn tên khách hàng
-        const savedProfile = EleganceApp.getCustomerProfile(currentUser);
-        document.getElementById('fullName').value = currentUser.name;
-        document.getElementById('phone').value = savedProfile.phone || '';
-        document.getElementById('address').value = savedProfile.address || '';
+        document.getElementById('fullName').value = currentUser.name || '';
+
+        try {
+            const profile = await apiGet(`/users/${currentUser.userId}/profile`);
+
+            document.getElementById('fullName').value =
+                profile.fullName || currentUser.name || '';
+
+            document.getElementById('phone').value =
+                profile.address?.receiverPhone || '';
+
+            document.getElementById('address').value =
+                profile.address?.addressDetail || '';
+        } catch (error) {
+            console.error('Không thể tải thông tin khách hàng:', error);
+        }
 
         // Load giỏ hàng
         const cart = JSON.parse(localStorage.getItem('elegance_cart')) || [];

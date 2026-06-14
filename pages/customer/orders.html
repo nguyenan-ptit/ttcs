@@ -630,10 +630,21 @@
                 const params = new URLSearchParams(window.location.search);
                 selectedOrderId = params.get('id') || customerOrders[0]?.id || '';
 
-                const totalValue = customerOrders.reduce(
-                    (sum, order) => sum + Number(order.totalAmount || EleganceApp.getOrderTotal(order)),
-                    0
+                const totalValue = customerOrders.reduce((sum, order) => {
+                if (order.status !== 'DELIVERED') {
+                    return sum;
+                }
+
+                const returnRequest = getReturnForOrder(order.id);
+
+                if (returnRequest?.status === 'completed') {
+                    return sum;
+                }
+
+                return sum + Number(
+                    order.totalAmount ?? EleganceApp.getOrderTotal(order)
                 );
+                }, 0);
 
                 document.getElementById('orderCount').textContent = customerOrders.length;
                 document.getElementById('orderTotalValue').textContent = EleganceApp.formatCurrency(totalValue);

@@ -2,7 +2,9 @@ const API_BASE = 'http://localhost:3000/api';
 
 async function parseApiError(response, fallbackMessage) {
     const errorData = await response.json().catch(() => ({}));
-    return new Error(errorData.message || `${fallbackMessage} (${response.status})`);
+    const error = new Error(errorData.message || `${fallbackMessage} (${response.status})`);
+    error.status = response.status;
+    return error;
 }
 
 async function apiGet(path) {
@@ -31,6 +33,17 @@ async function apiPost(path, data) {
     return response.json();
 }
 
+function getApiHeaders() {
+    const token = localStorage.getItem('authToken');
+
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? {
+            Authorization: `Bearer ${token}`
+        } : {})
+    };
+}
+
 async function apiPatch(path, data) {
     const response = await fetch(`${API_BASE}${path}`, {
         method: 'PATCH',
@@ -49,14 +62,15 @@ async function apiPatch(path, data) {
 async function apiPut(path, data) {
     const response = await fetch(`${API_BASE}${path}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: getApiHeaders(),
         body: JSON.stringify(data)
     });
 
     if (!response.ok) {
-        throw await parseApiError(response, 'Không thể cập nhật dữ liệu đến API');
+        throw await parseApiError(
+            response,
+            'Không thể cập nhật dữ liệu'
+        );
     }
 
     return response.json();

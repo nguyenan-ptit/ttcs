@@ -111,8 +111,8 @@
             <p>© 2026 ÉLÉGANCE. Bản quyền thuộc về Hệ thống Cửa hàng Thời trang.</p>
         </div>
     </footer>
-    <script src="../../assets/js/api.js"></script>
-    <script src="../../assets/js/main.js"></script>
+    <script src="../../assets/js/api.js?v=20260615-1"></script>
+    <script src="../../assets/js/main.js?v=20260615-1"></script>
     <script>
         function showMessage(targetId, message, type) {
             const target = document.getElementById(targetId);
@@ -170,18 +170,62 @@
                 }
             });
 
-            document.getElementById('passwordForm').addEventListener('submit', (event) => {
+            document.getElementById('passwordForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
+                const currentPassword = document.getElementById('currentPassword').value.trim();
+                const newPassword = document.getElementById('newPassword').value.trim();
+                const confirmPassword = document.getElementById('confirmPassword').value.trim();
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    showMessage(
+                        'passwordMessage',
+                        'Vui lòng nhập đầy đủ thông tin.',
+                        'error'
+                    );
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    showMessage(
+                        'passwordMessage',
+                        'Xác nhận mật khẩu mới không khớp.',
+                        'error'
+                    );
+                    return;
+                }
+
                 try {
-                    EleganceApp.changeCurrentUserPassword({
-                        currentPassword: document.getElementById('currentPassword').value,
-                        newPassword: document.getElementById('newPassword').value,
-                        confirmPassword: document.getElementById('confirmPassword').value
+                    await apiPut('/auth/change-password', {
+                        currentPassword,
+                        newPassword
                     });
+
                     event.target.reset();
-                    showMessage('passwordMessage', 'Đã cập nhật mật khẩu. Lần đăng nhập sau hãy dùng mật khẩu mới.', 'success');
+
+                    showMessage(
+                        'passwordMessage',
+                        'Đổi mật khẩu thành công.',
+                        'success'
+                    );
                 } catch (error) {
-                    showMessage('passwordMessage', error.message || 'Không thể đổi mật khẩu.', 'error');
+                    if (error.status === 401) {
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('authToken');
+                        showMessage(
+                            'passwordMessage',
+                            'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+                            'error'
+                        );
+                        setTimeout(() => {
+                            window.location.href = '../auth/login.html';
+                        }, 1500);
+                        return;
+                    }
+
+                    showMessage(
+                        'passwordMessage',
+                        error.message || 'Không thể đổi mật khẩu.',
+                        'error'
+                    );
                 }
             });
         });

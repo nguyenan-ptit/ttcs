@@ -1,6 +1,6 @@
 # TTCS - Website Bán Hàng Thời Trang
 
-Project web bán hàng thời trang **ELEGANCE** gồm frontend static HTML/CSS/JavaScript và backend Express kết nối MySQL.
+Project web bán hàng thời trang **ÉLÉGANCE** gồm frontend static HTML/CSS/JavaScript và backend Express kết nối MySQL.
 
 ## Công Nghệ
 
